@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ted-namer"
+version = "0.1.0"
+description = "Cluster- and family-level structural domain naming pipeline for TED (The Encyclopedia of Domains, ted.cathdb.info)"
+readme = "README.md"
+authors = [
+    { name = "Karel Berka" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = [
+    "bioinformatics",
+    "structural-biology",
+    "protein-domains",
+    "TED",
+    "CATH",
+    "AlphaFold",
+    "InterPro",
+    "Pfam",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "httpx>=0.27.0",
+    "pydantic>=2.7.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "tenacity>=8.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/KarelBerka/TED-namer"
+Repository = "https://github.com/KarelBerka/TED-namer"
+Issues = "https://github.com/KarelBerka/TED-namer/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.scripts]
+ted-namer = "ted_namer.cli:app"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
