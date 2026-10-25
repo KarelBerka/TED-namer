@@ -168,7 +168,86 @@ To maintain clear provenance between experimentally curated and computationally 
 
 ---
 
-## 7. Scoring & Candidate Ranking Algorithm
+## 7. Concrete Case Studies: Naming Domains with Unknown CATH (`cath_label = "-"`)
+
+In large-scale AlphaFold/TED datasets, **over 20% of structural domains lack an official CATH assignment** in TED (`cath_label = "-"`). `ted-namer` solves this through multi-tiered evidence integration and direct 3D structural rules.
+
+Below are representative real-world examples extracted directly from our 10,000 domain benchmark:
+
+### Case 1: 3-Layer $\alpha/\beta/\alpha$ Rossmann Fold via 3D Coordinates
+- **Domain ID**: `AF-A0A1G9Z131-F1-model_v4_TED02`
+- **Protein**: BioU (`A0A1G9Z131`, *Corynebacterium*)
+- **Residue Boundaries**: `182-316` (135 residues, mean pLDDT: 94.3)
+- **Raw CATH in TED**: `-` (Unclassified)
+- **3D Coordinate Analysis**:
+  - Secondary structure: 7 $\alpha$-helices, 5 $\beta$-strands.
+  - SVD plane analysis shows $\alpha$-helices positioned on **both opposite faces** of a parallel 5-stranded $\beta$-sheet ($d^+ > 0$ and $d^- < 0$).
+  - Rule triggered: `rule_3d_3layer_aba_rossmann_3.40.50`.
+- **Assigned CATH Classification**: **`3.40.50.T10`** (Class 3, Architecture 40 Rossmann, Topology 50 confirmed by 3D coordinates; estimated superfamily `.T10`).
+- **Assigned Domain Name**: **`BioU C-terminal domain`** (Tier 3: `protein_family_context`, confidence: 0.526).
+  > **Insight**: Even without any sequence profile domain hit in Pfam or CDD, the pipeline resolves both the precise 3D fold geometry (`3.40.50`) and positional protein context, avoiding a generic "Uncharacterized" label.
+
+### Case 2: TIM Barrel ($\alpha/\beta$ 8-stranded barrel) via 3D Coordinates
+- **Domain ID**: `AF-Q8U3D2-F1-model_v4_TED01`
+- **Protein**: Argonaute `ago` (`Q8U3D2`, *Pyrococcus*)
+- **Residue Boundaries**: `1-146_284-319` (Discontinuous splicing, 182 residues, mean pLDDT: 94.9)
+- **Raw CATH in TED**: `-` (Unclassified)
+- **3D Coordinate Analysis**:
+  - Secondary structure: 8 $\alpha$-helices, 9 $\beta$-strands.
+  - Spliced segments wrap into a closed cylindrical parallel $\beta$-barrel surrounded by outer $\alpha$-helices.
+  - Rule triggered: `rule_3d_tim_barrel_3.20.20`.
+- **Assigned CATH Classification**: **`3.20.20.T10`** (TIM Barrel topology confirmed by 3D coordinates).
+- **Assigned Domain Name**: **`N-terminal domain`** (Tier 1: `specific_domain`, confidence: 0.918).
+
+### Case 3: $\alpha$-Solenoid Repetitive Curvature via 3D Coordinates
+- **Domain ID**: `AF-O05442-F1-model_v4_TED01`
+- **Protein**: Coproporphyrinogen-III oxidase `cpnT` (`O05442`, *Bacillus*)
+- **Residue Boundaries**: `8-109_120-240_256-309` (3-segment discontinuous, 277 residues, pLDDT: 80.2)
+- **Raw CATH in TED**: `-` (Unclassified)
+- **3D Coordinate Analysis**:
+  - Secondary structure: 6 $\alpha$-helices, 0 $\beta$-strands ($100\%$ mainly $\alpha$).
+  - Helix direction vectors show repetitive curvature without antiparallel bundle packing.
+  - Rule triggered: `rule_3d_alpha_solenoid_1.25.40`.
+- **Assigned CATH Classification**: **`1.25.40.T10`** (Class 1, Architecture 25 Alpha Solenoid).
+- **Assigned Domain Name**: **`NTD domain`** (Tier 1: `specific_domain`, confidence: 0.884).
+
+### Case 4: 2-Layer $\alpha/\beta$ Plait Sandwich via 3D Coordinates
+- **Domain ID**: `AF-P0ABG4-F1-model_v4_TED02`
+- **Protein**: Cell division protein FtsW (`P0ABG4`, *E. coli*)
+- **Residue Boundaries**: `113-239` (127 residues, pLDDT: 86.8)
+- **Raw CATH in TED**: `-` (Unclassified)
+- **3D Coordinate Analysis**:
+  - Secondary structure: 5 $\alpha$-helices, 3 $\beta$-strands.
+  - Helices cluster exclusively on **one face** of the 3-stranded $\beta$-sheet ($d_k < 0$).
+  - Rule triggered: `rule_3d_2layer_ab_plait_3.30.70`.
+- **Assigned CATH Classification**: **`3.30.70.T10`** (2-Layer $\alpha/\beta$ Sandwich).
+- **Assigned Domain Name**: **`SEDS central domain`** (Tier 3: `protein_family_context`, confidence: 0.548).
+
+### Case 5: CATH Superfamily Inferred via High-IoU Gene3D Overlap
+- **Domain ID**: `AF-A4F4K3-F1-model_v4_TED02`
+- **Protein**: Cytochrome P450 CYP1A1 (`A4F4K3`)
+- **Residue Boundaries**: `107-146` (40 residues, pLDDT: 94.4)
+- **Raw CATH in TED**: `-` (Unclassified)
+- **Sequence/Profile Overlap**:
+  - Overlaps InterPro CATH-Gene3D entry `G3DSA:1.10.630.10` with high structural boundary agreement ($\text{IoU} \ge 0.65$).
+  - Source triggered: `g3dsa_overlap`.
+- **Assigned CATH Classification**: **`1.T10.T630.T10`** (Class 1 confirmed by SSE; Architecture 10, Topology 630 inferred via Gene3D).
+- **Assigned Domain Name**: **`Cytochrome P450`** (Tier 2: `superfamily`, confidence: 0.786).
+
+### Summary of Classification for Unannotated CATH Domains
+
+| Unknown CATH Scenario | TED Raw | Detection Mechanism | Assigned CATH Code | Resulting Annotation Tier |
+| :--- | :---: | :--- | :---: | :---: |
+| **Rossmann 3-layer ($\alpha/\beta/\alpha$)** | `-` | 3D SVD sheet plane + helix distances | `3.40.50.T10` | Tier 3 (Family context) |
+| **TIM Barrel ($\alpha/\beta$ 8-barrel)** | `-` | 3D cylindrical closure of 8 $\beta/\alpha$ | `3.20.20.T10` | Tier 1 (Specific domain) |
+| **Alpha Solenoid** | `-` | 3D helix curvature without bundling | `1.25.40.T10` | Tier 1 (Specific domain) |
+| **2-layer $\alpha/\beta$ Plait** | `-` | 3D single-sided helix-sheet packing | `3.30.70.T10` | Tier 3 (Family context) |
+| **Gene3D Overlap** | `-` | Sequence $\text{IoU} \ge 0.65$ with `G3DSA` | `1.T10.T630.T10` | Tier 2 (Superfamily) |
+| **Partial TED Topology** | `1.20.58` | Promoted to 4-level with estimated $H$ | `1.20.58.T10` | Tier 3 (Family context) |
+
+---
+
+## 8. Scoring & Candidate Ranking Algorithm
 
 To select the definitive consensus name from dozens of candidate hits across databases:
 
@@ -191,7 +270,7 @@ $$S(c) = W_{\text{tier}} \times W_{\text{db}} \times \overline{\text{IoU}} \time
 
 ---
 
-## 8. Large-Scale Empirical Validation: 10,000 TED Domains
+## 9. Large-Scale Empirical Validation: 10,000 TED Domains
 
 The pipeline was benchmarked on **10,000 diverse TED domains** evaluated across **10 independent batches of 1,000 domains each**, spanning 27 taxonomic kingdoms, model organisms, and unreviewed TrEMBL sets:
 

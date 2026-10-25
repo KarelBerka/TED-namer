@@ -148,6 +148,21 @@ When official CATH classifications are incomplete, `ted-namer` applies 3D coordi
   - Rossmann 3-layer $\alpha/\beta/\alpha$ (`3.40`) vs. 2-layer $\alpha/\beta$ (`3.30`) via signed distance to sheet planes.
 - **Estimated Levels**: Prefixed with `T` (e.g., `3.40.50.T10`, `1.10.T10.T10`).
 
+### Examples of Domains with Unknown / Inferred CATH (`cath_label = "-"`)
+
+In TED, over 20% of structural domains lack an official CATH classification. `ted-namer` resolves their 3D fold geometry and biological names seamlessly:
+
+| Domain ID | Protein & Taxon | TED Raw CATH | Assigned CATH Code | Detection Mechanism | Assigned Name & Tier |
+| :--- | :--- | :---: | :---: | :--- | :--- |
+| `AF-A0A1G9Z131-F1-model_v4_TED02` | BioU (*Corynebacterium*) | `-` | **`3.40.50.T10`** | 3D SVD sheet plane + helix distances | **BioU C-terminal domain** *(Tier 3)* |
+| `AF-Q8U3D2-F1-model_v4_TED01` | Argonaute ago (*Pyrococcus*) | `-` | **`3.20.20.T10`** | 3D cylindrical closure of 8 $\beta/\alpha$ | **N-terminal domain** *(Tier 1)* |
+| `AF-O05442-F1-model_v4_TED01` | CpnT (*Bacillus*) | `-` | **`1.25.40.T10`** | 3D helix curvature (solenoid) | **NTD domain** *(Tier 1)* |
+| `AF-P0ABG4-F1-model_v4_TED02` | FtsW (*E. coli*) | `-` | **`3.30.70.T10`** | 3D single-sided helix-sheet packing | **SEDS central domain** *(Tier 3)* |
+| `AF-A4F4K3-F1-model_v4_TED02` | Cytochrome P450 CYP1A1 | `-` | **`1.T10.T630.T10`** | Sequence overlap with `G3DSA:1.10.630` | **Cytochrome P450** *(Tier 2)* |
+| `AF-P0A710-F1-model_v4_TED01` | YciB (*E. coli*) | `1.20.58` | **`1.20.58.T10`** | TED partial topology + estimated $H$ | **YciB N-terminal domain** *(Tier 3)* |
+
+*Full case studies and geometric derivations are detailed in [docs/NAMING_PROCESS.md](docs/NAMING_PROCESS.md).*
+
 ---
 
 ## Large-Scale Benchmark & Stability (10,000 TED Domains)
