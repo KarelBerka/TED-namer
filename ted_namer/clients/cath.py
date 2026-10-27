@@ -39,7 +39,7 @@ class CathClient:
 
         cache_key = f"{display_code}|{estimation_source}"
         if self.cache:
-            cached = self.cache.get("cath_resolution_v2", cache_key)
+            cached = self.cache.get("cath_resolution_v3", cache_key)
             if cached is not None:
                 return CathResolution.model_validate(cached)
 
@@ -68,8 +68,13 @@ class CathClient:
             topology_code=t_code_display,
         )
 
-        # 1. Populate H-level superfamily name only when H-code comes from official TED or G3DSA match
-        if depth >= 4 and estimation_source in {"ted_official", "g3dsa_overlap", "ted_t_plus_g3dsa"}:
+        # 1. Populate H-level superfamily name when H-code comes from official TED, G3DSA, or profile-to-CATH map
+        if depth >= 4 and estimation_source in {
+            "ted_official",
+            "g3dsa_overlap",
+            "ted_t_plus_g3dsa",
+            "profile_cath_map",
+        }:
             h_code_numeric = ".".join(num_parts[:4])
             await self._populate_h_level_from_interpro(h_code_numeric, resolution)
             await self._populate_funfams(h_code_numeric, resolution)
@@ -83,7 +88,7 @@ class CathClient:
             resolution.class_name = await self._fetch_cathtree_name(c_code_numeric, 1)
 
         if self.cache:
-            self.cache.set("cath_resolution_v2", cache_key, resolution.model_dump())
+            self.cache.set("cath_resolution_v3", cache_key, resolution.model_dump())
 
         return resolution
 
@@ -104,13 +109,7 @@ class CathClient:
             if isinstance(integrated_ipr, str) and integrated_ipr:
                 resolution.integrated_ipr = integrated_ipr
 
-            is_pdb_header_style = bool(
-                direct_name and any(tok in str(direct_name) for tok in ("; Chain", "; domain", "subunit A;"))
-            )
-            if direct_name and not is_pdb_header_style:
-                resolution.superfamily_name = str(direct_name).rstrip(".")
-                return
-
+            # Always prefer the curated integrated InterPro superfamily name over raw G3DSA legacy PDB headers
             if resolution.integrated_ipr:
                 ipr_url = f"{INTERPRO_API_BASE}/entry/interpro/{resolution.integrated_ipr}"
                 ipr_resp = await self.http.get(ipr_url, headers={"Accept": "application/json"}, timeout=15.0)

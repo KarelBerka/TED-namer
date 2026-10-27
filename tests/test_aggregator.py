@@ -185,3 +185,60 @@ def test_novel_fold_positional_fallback() -> None:
     assert res.specificity_tier == SpecificityTier.PROTEIN_FAMILY_CONTEXT
     assert "c-terminal domain" in res.consensus_name.lower()
     assert "helicase" in res.consensus_name.lower()
+
+
+def test_curated_subdomain_lobe_and_integrated_ipr_override() -> None:
+    """Verify multi-lobe sequence domains resolve to positional subdomains and integrated IPR overrides raw G3DSA PDB titles."""
+    m = EnrichedTedDomain(
+        domain=TedDomainMember(
+            ted_id="AF-O13958-F1-model_v4_TED01",
+            uniprot_acc="O13958",
+            chopping="25-110",
+            nres_domain=86,
+            cath_label="3.30.200.20",
+            cath_assignment_level="H",
+        ),
+        protein_context=ProteinContext(
+            uniprot_acc="O13958",
+            recommended_name="Serine/threonine-protein kinase",
+            is_reviewed=True,
+            protein_length=450,
+        ),
+        overlapping_annotations=[
+            OverlappingAnnotation(
+                source_db="pfam",
+                accession="PF00069",
+                name="Protein kinase domain",
+                integrated_ipr="IPR000719",
+                integrated_ipr_name="Protein kinase domain",
+                annotation_type="domain",
+                chopping="25-285",
+                iou=0.33,
+                ted_coverage=1.0,
+                annot_coverage=0.33,
+                overlap_category=OverlapCategory.SUPRA_DOMAIN,
+            ),
+            OverlappingAnnotation(
+                source_db="cathgene3d",
+                accession="G3DSA:3.30.200.20",
+                name="Phosphorylase Kinase; domain 1",
+                integrated_ipr="IPR011009",
+                integrated_ipr_name="Protein kinase-like domain superfamily",
+                annotation_type="homologous_superfamily",
+                chopping="20-112",
+                iou=0.91,
+                ted_coverage=1.0,
+                annot_coverage=0.91,
+                overlap_category=OverlapCategory.EXACT_MATCH,
+            ),
+        ],
+        relative_position="N-terminal",
+    )
+
+    res = aggregate_cluster_evidence("kinase_nlobe", [m])
+    assert res.specificity_tier == SpecificityTier.SPECIFIC_DOMAIN
+    assert res.consensus_name == "Protein kinase N-terminal subdomain"
+    # Also verify that the superfamily candidate used the integrated InterPro name rather than 'Phosphorylase Kinase; domain 1'
+    sf_cands = [c for c in res.top_candidates if c.specificity_tier == SpecificityTier.SUPERFAMILY]
+    assert sf_cands
+    assert sf_cands[0].canonical_name == "Protein kinase-like domain superfamily"

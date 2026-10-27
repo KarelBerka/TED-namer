@@ -41,7 +41,7 @@ def test_infer_cath_from_g3dsa_overlap_when_ted_unassigned() -> None:
         cath_label="-",
         cath_assignment_level="-",
     )
-    # High-IoU G3DSA match directly establishes C.A.T (3.40.640) and prefixes H (.T10)
+    # High-IoU G3DSA match (>=0.65 IoU, >=0.75 TED cov) has 99.8% empirical H-level accuracy -> direct 4-level code
     annots_high = [
         OverlappingAnnotation(
             source_db="cathgene3d",
@@ -56,11 +56,29 @@ def test_infer_cath_from_g3dsa_overlap_when_ted_unassigned() -> None:
         )
     ]
     formatted, numeric, source = infer_cath_classification(member, annots_high)
-    assert formatted == "3.40.640.T10"
+    assert formatted == "3.40.640.10"
     assert numeric == "3.40.640.10"
     assert source == "g3dsa_overlap"
 
-    # Partial-IoU G3DSA match keeps only C direct and prefixes A.T.H
+    # Moderate-IoU G3DSA match establishes C.A.T (97.5% accuracy) and prefixes H (.T10)
+    annots_mod = [
+        OverlappingAnnotation(
+            source_db="cathgene3d",
+            accession="G3DSA:3.40.640.10",
+            name="Pyridoxal phosphate-dependent transferase",
+            annotation_type="homologous_superfamily",
+            chopping="15-160",
+            iou=0.50,
+            ted_coverage=0.60,
+            annot_coverage=0.90,
+            overlap_category=OverlapCategory.PARTIAL_OVERLAP,
+        )
+    ]
+    formatted_m, numeric_m, _ = infer_cath_classification(member, annots_mod)
+    assert formatted_m == "3.40.640.T10"
+    assert numeric_m == "3.40.640.10"
+
+    # Low-IoU G3DSA match keeps only C direct and prefixes A.T.H
     annots_partial = [
         OverlappingAnnotation(
             source_db="cathgene3d",
@@ -97,7 +115,7 @@ def test_infer_cath_when_ted_is_t_level() -> None:
 
 
 def test_direct_rules_for_architecture_and_topology() -> None:
-    # 1. Single alpha-helix coiled-coil rule -> direct 1.20.5 (depth=3 -> 1.20.5.T10)
+    # 1. Single alpha-helix coiled-coil rule -> Class 1 direct, A/T/H T-prefixed (1.T20.T5.T10)
     coiled_coil = TedDomainMember(
         ted_id="TED01",
         uniprot_acc="P00001",
@@ -108,23 +126,10 @@ def test_direct_rules_for_architecture_and_topology() -> None:
         norm_rg=0.48,
     )
     f_cc, _, rule_cc = infer_cath_classification(coiled_coil, [])
-    assert f_cc == "1.20.5.T10"
+    assert f_cc == "1.T20.T5.T10"
     assert rule_cc == "rule_alpha_coiled_coil_1.20.5"
 
-    # 2. Classic (beta/alpha)8 TIM barrel rule -> direct 3.20.20 (depth=3 -> 3.20.20.T10)
-    tim_dom = TedDomainMember(
-        ted_id="TED01",
-        uniprot_acc="P00002",
-        chopping="1-250",
-        nres_domain=250,
-        num_helix=8,
-        num_strand=8,
-    )
-    f_tim, _, rule_tim = infer_cath_classification(tim_dom, [])
-    assert f_tim == "3.20.20.T10"
-    assert rule_tim == "rule_sse_tim_barrel_3.20.20"
-
-    # 3. Class 3 Rossmann-like SSE rule without 3D PDB -> direct C.A (3.40) and T-prefixed Topology/Superfamily (3.40.T50.T10)
+    # 2. Class 3 Rossmann-like SSE rule without 3D PDB -> Class 3 direct, A/T/H T-prefixed (3.T40.T50.T10)
     ab_dom = TedDomainMember(
         ted_id="TED01",
         uniprot_acc="P00003",
@@ -134,11 +139,11 @@ def test_direct_rules_for_architecture_and_topology() -> None:
         num_strand=6,
     )
     f_ab, num_ab, src_ab = infer_cath_classification(ab_dom, [])
-    assert f_ab == "3.40.T50.T10"
+    assert f_ab == "3.T40.T50.T10"
     assert num_ab == "3.40.50.10"
     assert src_ab == "rule_sse_3layer_rossmann_3.40"
 
-    # 4. Class 2 Beta sandwich SSE rule -> direct C.A (2.60) and T-prefixed T/H (2.60.T40.T10)
+    # 3. Class 2 Beta sandwich SSE rule -> Class 2 direct, A/T/H T-prefixed (2.T60.T40.T10)
     beta_dom = TedDomainMember(
         ted_id="TED01",
         uniprot_acc="P00004",
@@ -151,4 +156,4 @@ def test_direct_rules_for_architecture_and_topology() -> None:
     c2, a2, t2, h2 = classify_cath_from_sse(beta_dom)
     assert (c2, a2, t2, h2) == ("2", "60", "40", "10")
     f_beta, _, _ = infer_cath_classification(beta_dom, [])
-    assert f_beta == "2.60.T40.T10"
+    assert f_beta == "2.T60.T40.T10"

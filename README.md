@@ -154,14 +154,31 @@ In TED, over 20% of structural domains lack an official CATH classification. `te
 
 | Domain ID | Protein & Taxon | TED Raw CATH | Assigned CATH Code | Detection Mechanism | Assigned Name & Tier |
 | :--- | :--- | :---: | :---: | :--- | :--- |
-| `AF-A0A1G9Z131-F1-model_v4_TED02` | BioU (*Corynebacterium*) | `-` | **`3.40.50.T10`** | 3D SVD sheet plane + helix distances | **BioU C-terminal domain** *(Tier 3)* |
-| `AF-Q8U3D2-F1-model_v4_TED01` | Argonaute ago (*Pyrococcus*) | `-` | **`3.20.20.T10`** | 3D cylindrical closure of 8 $\beta/\alpha$ | **N-terminal domain** *(Tier 1)* |
-| `AF-O05442-F1-model_v4_TED01` | CpnT (*Bacillus*) | `-` | **`1.25.40.T10`** | 3D helix curvature (solenoid) | **NTD domain** *(Tier 1)* |
-| `AF-P0ABG4-F1-model_v4_TED02` | FtsW (*E. coli*) | `-` | **`3.30.70.T10`** | 3D single-sided helix-sheet packing | **SEDS central domain** *(Tier 3)* |
-| `AF-A4F4K3-F1-model_v4_TED02` | Cytochrome P450 CYP1A1 | `-` | **`1.T10.T630.T10`** | Sequence overlap with `G3DSA:1.10.630` | **Cytochrome P450** *(Tier 2)* |
+| `AF-A0A1G9Z131-F1-model_v4_TED02` | BioU (*Corynebacterium*) | `-` | **`3.T40.T50.T10`** | 3D SVD sheet plane + helix distances | **BioU C-terminal domain** *(Tier 3)* |
+| `AF-Q8U3D2-F1-model_v4_TED01` | Argonaute ago (*Pyrococcus*) | `-` | **`3.T20.T20.T10`** | 3D cylindrical closure of 8 $\beta/\alpha$ | **N-terminal domain** *(Tier 1)* |
+| `AF-O05442-F1-model_v4_TED01` | CpnT (*Bacillus*) | `-` | **`1.T25.T40.T10`** | 3D helix curvature (solenoid) | **NTD domain** *(Tier 1)* |
+| `AF-P0ABG4-F1-model_v4_TED02` | FtsW (*E. coli*) | `-` | **`3.T30.T70.T10`** | 3D single-sided helix-sheet packing | **SEDS central domain** *(Tier 3)* |
+| `AF-A4F4K3-F1-model_v4_TED02` | Cytochrome P450 CYP1A1 | `-` | **`1.10.630.T10`** | Sequence overlap with `G3DSA:1.10.630` | **Cytochrome P450 N-terminal subdomain** *(Tier 1)* |
 | `AF-P0A710-F1-model_v4_TED01` | YciB (*E. coli*) | `1.20.58` | **`1.20.58.T10`** | TED partial topology + estimated $H$ | **YciB N-terminal domain** *(Tier 3)* |
 
 *Full case studies and geometric derivations are detailed in [docs/NAMING_PROCESS.md](docs/NAMING_PROCESS.md).*
+
+---
+
+## Blind Cross-Validation & Ground-Truth Accuracy
+
+Detailed ground-truth validation across 10,000 domains is documented in [**`docs/ACCURACY_VALIDATION.md`**](docs/ACCURACY_VALIDATION.md) and reproducible via [`scripts/evaluate_accuracy.py`](scripts/evaluate_accuracy.py):
+
+### 1. Blind Hold-Out CATH Classification Accuracy ($N = 6,979$ Official CATH Domains)
+
+| Hold-Out Scenario | Class ($C$) | Architecture ($C.A$) | Topology ($C.A.T$) | Superfamily ($C.A.T.H$) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Full Fallback Cascade** *(Mask TED `cath_label`)* | **97.9%** | **93.9%** | **92.3%** | **89.4%** |
+| **`Profile-to-CATH` Bridge (5-Fold CV)** *(Mask TED CATH & `G3DSA`; 81.6% cov)* | **99.0%** | **97.3%** | **96.4%** | **91.4%** |
+| **Pure 3D/SSE Rules Only** *(Zero sequence/profile homology)* | **85.2%** *(95.6% pure $\alpha/\beta$)* | **40.6%** *(marked `T`)* | **24.4%** *(marked `T`)* | — |
+
+- **Precision of Direct (Non-`T`-Prefixed) Levels**: **97.9%** for $C$, **98.2%** for $C.A$, **97.9%** for $C.A.T$, and **99.8%** for $C.A.T.H$.
+- **Leave-One-Database-Out Naming Concordance ($N = 3,388$)**: **87.5%** exact InterPro/normalized name concordance and **95.2%** semantic keyword concordance when holding out `Pfam`.
 
 ---
 
@@ -169,20 +186,19 @@ In TED, over 20% of structural domains lack an official CATH classification. `te
 
 Tested across **10,000 diverse TED domains** (10 independent batches of 1,000 domains each) spanning 27 taxonomic kingdoms, model organisms, and unreviewed TrEMBL sets:
 
-| Metric | Batches 1–5 (1–5k) | Batches 6–10 (6–10k) | **TOTAL 10,000 TED Domains** |
-| :--- | :---: | :---: | :---: |
-| **Domain Count** | 5,000 | 5,000 | **10,000** |
-| **Mean Confidence Score** | 0.844 | 0.861 | **0.852** |
-| **Tier 1: Specific Domain** | 53.9% | 57.1% | **55.5%** |
-| **Tier 2: Superfamily** | 24.5% | 25.2% | **24.9%** |
-| **Tier 3: Protein Family Context** | 21.5% | 17.6% | **19.6%** |
-| **Tier 4: Topology / Fold** | 0.1% | 0.0% | **0.0%** (3 / 10,000) |
-| **CATH: Official (4-level)** | 67.0% | 72.5% | **69.8%** |
-| **CATH: Direct 3D/SSE Rules** | 17.3% | 13.7% | **15.5%** |
-| **CATH: TED T-level (`.T10`)** | 12.5% | 10.6% | **11.6%** |
-| **CATH: Gene3D Overlap** | 3.2% | 3.2% | **3.2%** |
-| **Difficult Cases (Confidence < 0.50)** | 0.1% | 0.0% | **0.1%** (7 / 10,000) |
-| **Low pLDDT (< 60)** | 0.8% | 1.0% | **0.9%** |
+| Metric | Result Across 10,000 TED Domains (Calibrated) |
+| :--- | :---: |
+| **Domain Count** | **10,000** |
+| **Mean Calibrated Confidence Score** | **0.827** *(Tier 1: 0.905, Tier 2: 0.817, Tier 3: 0.426)* |
+| **Tier 1: Specific Domain & Subdomain** | **64.4%** |
+| **Tier 2: Superfamily** | **23.9%** |
+| **Tier 3: Protein Family Context** | **11.7%** |
+| **Tier 4: Topology / Fold** | **0.03%** (3 / 10,000) |
+| **CATH: Official (4-level)** | **69.8%** |
+| **CATH: TED T-level (`ted_t_plus_*`)** | **11.6%** |
+| **CATH: Profile-to-CATH & Gene3D Overlap** | **8.7%** *(5.5% Profile-to-CATH + 3.2% Gene3D)* |
+| **CATH: Pure 3D/SSE Rules (`C.T...`)** | **9.9%** |
+| **Low pLDDT (< 60)** | **0.9%** |
 
 Full benchmark reports and datasets are available in the [`examples/`](examples/) directory.
 

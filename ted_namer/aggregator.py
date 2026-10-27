@@ -17,6 +17,7 @@ from ted_namer.models import (
     OverlappingAnnotation,
     SpecificityTier,
 )
+from ted_namer.overlap import parse_chopping
 
 _LOW_INFO_PATTERNS = re.compile(
     r"\b(uncharacterized|uncharacterised|hypothetical|putative|duf\d+|domain of unknown function|"
@@ -54,10 +55,16 @@ def normalize_domain_name(name: str) -> str:
 
 
 def clean_display_domain_name(name: str, tier: SpecificityTier) -> str:
-    """Standardize capitalization and suffix of a domain name for display."""
+    """Standardize capitalization and suffix of a domain name for display, stripping PDB-header artifacts."""
     txt = re.sub(r"\s+", " ", name.strip().rstrip(".").replace(", ", " "))
     if not txt:
         return "Unassigned TED structural domain"
+
+    # Strip legacy PDB-header artifacts from CATH/Gene3D representative titles
+    txt = re.sub(r";\s*Chain\s+[A-Za-z0-9]+.*$", "", txt, flags=re.IGNORECASE)
+    txt = re.sub(r"\.\s*Chain\s+[A-Za-z0-9]+.*$", "", txt, flags=re.IGNORECASE)
+    txt = re.sub(r";\s*domain\s+(\d+)$", r" domain \1", txt, flags=re.IGNORECASE)
+    txt = txt.strip().rstrip(";.,")
 
     # Preserve capitalization unless the entire string is ALL CAPS (like PANTHER 'CELLULAR TUMOR ANTIGEN P53')
     if txt.isupper() and len(txt) > 6:
@@ -69,7 +76,19 @@ def clean_display_domain_name(name: str, tier: SpecificityTier) -> str:
         txt = re.sub(r"\s+superfamily$", "", txt, flags=re.IGNORECASE)
         if not any(
             w in txt.lower()
-            for w in ("domain", "repeat", "finger", "motif", "region", "lobe", "barrel", "helix", "bundle", "fold")
+            for w in (
+                "domain",
+                "subdomain",
+                "repeat",
+                "finger",
+                "motif",
+                "region",
+                "lobe",
+                "barrel",
+                "helix",
+                "bundle",
+                "fold",
+            )
         ):
             txt = f"{txt} domain"
         elif txt.lower().endswith("motif") and "domain" not in txt.lower():
@@ -111,6 +130,37 @@ def make_short_label(name: str, max_len: int = 24) -> str:
     return short[:max_len].rstrip("_-")
 
 
+def _is_curated_subdomain_lobe(annot: OverlappingAnnotation) -> bool:
+    """Return True if a TED domain is a structural lobe/subdomain inside a curated functional domain."""
+    atype = annot.annotation_type.lower()
+    db = annot.source_db.lower()
+    return (
+        atype == "domain"
+        and (db in _SPECIFIC_DOMAIN_DBS or db == "interpro")
+        and annot.ted_coverage >= 0.80
+        and 0.20 <= annot.annot_coverage < 0.50
+        and annot.iou < 0.35
+    )
+
+
+def _compute_subdomain_position(ted_chopping: str, annot_chopping: str) -> str:
+    """Compute the relative position of a TED structural lobe within an enclosing sequence domain."""
+    t_segs = parse_chopping(ted_chopping)
+    a_segs = parse_chopping(annot_chopping)
+    if not t_segs or not a_segs:
+        return "subdomain"
+    a_start = a_segs[0].start
+    a_end = a_segs[-1].end
+    a_span = max(1, a_end - a_start + 1)
+    t_mid = 0.5 * (t_segs[0].start + t_segs[-1].end)
+    rel = (t_mid - a_start) / a_span
+    if rel < 0.38:
+        return "N-terminal subdomain"
+    if rel > 0.62:
+        return "C-terminal subdomain"
+    return "central subdomain"
+
+
 def determine_annotation_tier(annot: OverlappingAnnotation) -> SpecificityTier:
     """Map an OverlappingAnnotation to its SpecificityTier based on source_db, type, and overlap."""
     if is_low_information_name(annot.name):
@@ -118,6 +168,15 @@ def determine_annotation_tier(annot: OverlappingAnnotation) -> SpecificityTier:
 
     atype = annot.annotation_type.lower()
     db = annot.source_db.lower()
+
+    # Direct high-overlap domain or repeat match -> Tier 1 (Specific Domain)
+    if atype in {"domain", "repeat"} or db in _SPECIFIC_DOMAIN_DBS:
+        if annot.iou >= 0.35 or (annot.ted_coverage >= 0.50 and annot.annot_coverage >= 0.50):
+            return SpecificityTier.SPECIFIC_DOMAIN
+
+    # Structural lobe/subdomain of a single curated multi-lobe domain (e.g. Protein kinase N-lobe)
+    if _is_curated_subdomain_lobe(annot):
+        return SpecificityTier.SPECIFIC_DOMAIN
 
     # Supra-domain full-protein family matches or tiny sub-domain motifs belong to Tier 3 (Context)
     if (
@@ -128,10 +187,6 @@ def determine_annotation_tier(annot: OverlappingAnnotation) -> SpecificityTier:
         if atype in {"motif", "region"} and annot.iou >= 0.60 and annot.ted_coverage >= 0.65:
             return SpecificityTier.SPECIFIC_DOMAIN
         return SpecificityTier.PROTEIN_FAMILY_CONTEXT
-
-    if atype in {"domain", "repeat"} or db in _SPECIFIC_DOMAIN_DBS:
-        if annot.iou >= 0.35 or (annot.ted_coverage >= 0.50 and annot.annot_coverage >= 0.50):
-            return SpecificityTier.SPECIFIC_DOMAIN
 
     if atype == "homologous_superfamily" or db in _SUPERFAMILY_DBS:
         if annot.iou >= 0.30 or annot.ted_coverage >= 0.50:
@@ -227,8 +282,13 @@ def aggregate_cluster_evidence(
             acc_obj = _CandidateAccumulator(group_key=group_key)
             accumulators[group_key] = acc_obj
 
-        # Prefer specific DB names (CDD/Pfam/InterPro domain) over ALL-CAPS or generic names
-        weight = 2 if source_db in {"cdd", "pfam", "interpro", "smart"} else 1
+        # Prefer curated InterPro names (3) and specific domain DBs (2) over raw superfamily/PDB titles (1)
+        if source_db == "interpro":
+            weight = 3
+        elif source_db in {"cdd", "pfam", "smart", "prosite", "profile", "uniprot_feature"}:
+            weight = 2
+        else:
+            weight = 1
         acc_obj.names_counter[display_name] += weight
         if short_name and short_name not in acc_obj.short_names:
             acc_obj.short_names.append(short_name)
@@ -257,20 +317,38 @@ def aggregate_cluster_evidence(
         # 1. Overlapping sequence/structure annotations
         for annot in m.overlapping_annotations:
             tier = determine_annotation_tier(annot)
-            # Group by integrated InterPro ID + tier if available so CDD + Pfam + InterPro unite!
             ipr_group_id = annot.integrated_ipr or (
                 annot.accession if annot.source_db == "interpro" and annot.accession.startswith("IPR") else None
             )
-            if ipr_group_id and tier in {SpecificityTier.SPECIFIC_DOMAIN, SpecificityTier.SUPERFAMILY}:
-                gkey = f"IPR:{ipr_group_id}:{tier.value}"
-            else:
-                gkey = f"NORM:{normalize_domain_name(annot.name)}:{tier.value}"
 
             disp = annot.name
-            if tier == SpecificityTier.PROTEIN_FAMILY_CONTEXT and "domain" not in disp.lower():
-                # Qualify supra-domain family hit by the TED domain's relative position
-                base_fam = re.sub(r"\s+family$", "", disp, flags=re.IGNORECASE)
-                disp = f"{base_fam} {pos_qualifier}"
+            # Replace raw G3DSA/SSF legacy PDB titles with the curated integrated InterPro superfamily name
+            if annot.integrated_ipr_name and (
+                annot.source_db in {"cathgene3d", "ssf"}
+                or any(
+                    tok in disp
+                    for tok in ("; domain", "domain 1", "domain 2", "Chain ", "Virus protein", "subunit ")
+                )
+            ):
+                disp = annot.integrated_ipr_name
+
+            eff_iou = annot.iou
+            if _is_curated_subdomain_lobe(annot):
+                sub_pos = _compute_subdomain_position(m.domain.chopping, annot.chopping)
+                base_dom = re.sub(r"\s+domain$", "", disp, flags=re.IGNORECASE).strip()
+                disp = f"{base_dom} {sub_pos}"
+                gkey = f"SUBLOBE:{ipr_group_id or normalize_domain_name(base_dom)}:{sub_pos}"
+                eff_iou = round(0.55 * annot.ted_coverage + 0.45 * annot.annot_coverage, 4)
+            else:
+                if ipr_group_id and tier in {SpecificityTier.SPECIFIC_DOMAIN, SpecificityTier.SUPERFAMILY}:
+                    gkey = f"IPR:{ipr_group_id}:{tier.value}"
+                else:
+                    gkey = f"NORM:{normalize_domain_name(disp)}:{tier.value}"
+
+                if tier == SpecificityTier.PROTEIN_FAMILY_CONTEXT and "domain" not in disp.lower():
+                    # Qualify supra-domain family hit by the TED domain's relative position
+                    base_fam = re.sub(r"\s+family$", "", disp, flags=re.IGNORECASE)
+                    disp = f"{base_fam} {pos_qualifier}"
 
             _add_hit(
                 group_key=gkey,
@@ -280,7 +358,7 @@ def aggregate_cluster_evidence(
                 source_db=annot.source_db,
                 accession=annot.accession,
                 member_id=member_id,
-                iou=annot.iou,
+                iou=eff_iou,
                 ted_cov=annot.ted_coverage,
                 annot_cov=annot.annot_coverage,
                 is_reviewed=is_rev,
@@ -317,14 +395,22 @@ def aggregate_cluster_evidence(
                     source_db="cath_t",
                     accession=f"CATH:{m.cath_info.topology_code}",
                     member_id=member_id,
-                    iou=0.75,
-                    ted_cov=0.85,
-                    annot_cov=0.75,
+                    iou=0.45,
+                    ted_cov=0.60,
+                    annot_cov=0.45,
                     is_reviewed=is_rev,
                 )
 
-        # 3. Parent UniProt protein family & recommended name context (crucial for novel folds!)
+        # 3. Parent UniProt protein family & recommended name context (using true domain/protein length ratio)
         if m.protein_context:
+            prot_len = (
+                m.protein_context.protein_length
+                if (m.protein_context.protein_length and m.protein_context.protein_length > 0)
+                else max(m.domain.nres_domain, 250)
+            )
+            dom_ratio = round(min(1.0, max(0.05, m.domain.nres_domain / max(1, prot_len))), 4)
+            ctx_iou = round(0.30 + 0.60 * dom_ratio, 4)
+
             for fam in m.protein_context.similarity_families:
                 base_fam = re.sub(r"\s+(subfamily|family|superfamily).*$", "", fam, flags=re.IGNORECASE).strip()
                 if base_fam:
@@ -342,9 +428,9 @@ def aggregate_cluster_evidence(
                         source_db="uniprot_family",
                         accession=m.protein_context.uniprot_acc,
                         member_id=member_id,
-                        iou=0.60,
-                        ted_cov=0.80,
-                        annot_cov=0.60,
+                        iou=ctx_iou,
+                        ted_cov=1.0,
+                        annot_cov=dom_ratio,
                         is_reviewed=is_rev,
                     )
 
@@ -364,9 +450,9 @@ def aggregate_cluster_evidence(
                     source_db="uniprot_protein",
                     accession=m.protein_context.uniprot_acc,
                     member_id=member_id,
-                    iou=0.55,
-                    ted_cov=0.75,
-                    annot_cov=0.55,
+                    iou=ctx_iou,
+                    ted_cov=1.0,
+                    annot_cov=dom_ratio,
                     is_reviewed=is_rev,
                 )
 
@@ -404,9 +490,15 @@ def aggregate_cluster_evidence(
         multi_db_bonus = min(1.08, 1.0 + 0.02 * (len(acc_obj.source_dbs) - 1))
         reviewed_bonus = 1.04 if len(acc_obj.reviewed_members) > 0 else 1.0
 
+        # Avoid artificial +0.45 floor when naming a single domain (total_members == 1 -> freq is trivially 1.0)
+        if total_members == 1:
+            overlap_term = 0.65 * mean_iou + 0.35 * mean_ted_cov
+        else:
+            overlap_term = 0.35 * freq + 0.45 * mean_iou + 0.20 * mean_ted_cov
+
         raw_score = (
             w_tier
-            * (0.45 * freq + 0.40 * mean_iou + 0.15 * mean_ted_cov)
+            * overlap_term
             * p_quality
             * multi_db_bonus
             * reviewed_bonus
