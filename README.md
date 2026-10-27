@@ -1,6 +1,7 @@
 # `ted-namer`: Structural Domain & Cluster Namer for TED
 
 [![CI](https://github.com/KarelBerka/TED-namer/actions/workflows/ci.yml/badge.svg)](https://github.com/KarelBerka/TED-namer/actions/workflows/ci.yml)
+[![JOSS Paper Draft](https://github.com/KarelBerka/TED-namer/actions/workflows/joss-paper.yml/badge.svg)](https://github.com/KarelBerka/TED-namer/actions/workflows/joss-paper.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: uv](https://img.shields.io/badge/managed%20by-uv-orange.svg)](https://github.com/astral-sh/uv)
@@ -212,8 +213,29 @@ uv run --extra dev pytest
 
 ---
 
-## Repository & Citation
+## Contributing & Community Guidelines
+
+Contributions, bug reports, and feature requests are welcome!
+- See [**`CONTRIBUTING.md`**](CONTRIBUTING.md) for development setup, testing instructions, and pull request guidelines.
+- Participation is governed by our [**`CODE_OF_CONDUCT.md`**](CODE_OF_CONDUCT.md).
+- Report issues or edge cases at [https://github.com/KarelBerka/TED-namer/issues](https://github.com/KarelBerka/TED-namer/issues).
+
+---
+
+## Citation & Manuscript
+
+If you use `ted-namer` in your research, please cite our manuscript in [`paper/paper.md`](paper/paper.md) (or via [`CITATION.cff`](CITATION.cff)):
+
+```bibtex
+@software{Berka2026tednamer,
+  author    = {Berka, Karel},
+  title     = {{ted-namer}: Automated biological naming and calibrated {CATH} classification for structural domains in {The Encyclopedia of Domains (TED)}},
+  year      = {2026},
+  url       = {https://github.com/KarelBerka/TED-namer},
+  version   = {0.1.0}
+}
+```
 
 - **Repository**: [https://github.com/KarelBerka/TED-namer](https://github.com/KarelBerka/TED-namer)
-- **Author**: Karel Berka
-- **License**: MIT
+- **Author**: Karel Berka ([ORCID: 0000-0001-9472-2589](https://orcid.org/0000-0001-9472-2589)), Palacký University Olomouc
+- **License**: [MIT](LICENSE)

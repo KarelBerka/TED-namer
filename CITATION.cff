@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "ted-namer: Automated biological naming and calibrated CATH classification for structural domains in The Encyclopedia of Domains (TED)"
+message: "If you use ted-namer in your research, please cite it using the metadata from this file."
+type: software
+authors:
+  - given-names: Karel
+    family-names: Berka
+    orcid: "https://orcid.org/0000-0001-9472-2589"
+    affiliation: "Department of Physical Chemistry, Faculty of Science, Palacký University Olomouc, Czech Republic"
+repository-code: "https://github.com/KarelBerka/TED-namer"
+url: "https://github.com/KarelBerka/TED-namer"
+license: MIT
+version: "0.1.0"
+date-released: "2026-10-27"
+keywords:
+  - bioinformatics
+  - structural-biology
+  - protein-domains
+  - AlphaFold
+  - TED
+  - CATH
+  - InterPro
+  - Pfam

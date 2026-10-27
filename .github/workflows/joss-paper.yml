@@ -1,0 +1,32 @@
+name: Build JOSS Paper Draft
+
+on:
+  push:
+    paths:
+      - "paper/**"
+      - ".github/workflows/joss-paper.yml"
+  pull_request:
+    paths:
+      - "paper/**"
+  workflow_dispatch:
+
+jobs:
+  build_paper:
+    runs-on: ubuntu-latest
+    name: Compile paper.md with OpenJournals Inara
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build PDF and JATS via OpenJournals Inara
+        uses: openjournals/inara@main
+        with:
+          args: -o pdf,jats paper/paper.md
+
+      - name: Upload compiled JOSS PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: joss-paper-pdf
+          path: |
+            paper/paper.pdf
+            paper/paper.jats
