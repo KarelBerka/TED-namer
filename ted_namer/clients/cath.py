@@ -2,16 +2,24 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Optional
 
 import httpx
 
 from ted_namer.cache import ApiCache
 from ted_namer.cath_classifier import is_estimated_cath_code, strip_t_prefixes
-from ted_namer.models import CathResolution
+from ted_namer.models import CathResolution, OverlappingAnnotation
 
 CATH_API_BASE = "https://www.cathdb.info/version/v4_3_0/api/rest"
 INTERPRO_API_BASE = "https://www.ebi.ac.uk/interpro/api"
+
+_CATH_CLASS_NAMES = {
+    "1": "Mainly Alpha",
+    "2": "Mainly Beta",
+    "3": "Alpha Beta",
+    "4": "Few Secondary Structures",
+}
 
 
 class CathClient:
@@ -26,6 +34,7 @@ class CathClient:
         cath_label: str,
         raw_ted_cath_label: str = "-",
         estimation_source: str = "ted_official",
+        overlapping_annotations: Optional[list[OverlappingAnnotation]] = None,
     ) -> Optional[CathResolution]:
         """Resolve a CATH code (official or 'T'-prefixed estimate) to its hierarchy of names."""
         raw_code = (cath_label or "").strip()
@@ -66,26 +75,47 @@ class CathClient:
             estimation_source=estimation_source,
             assignment_level=assignment_level,
             topology_code=t_code_display,
+            class_name=_CATH_CLASS_NAMES.get(c_code_numeric or ""),
         )
 
+        tasks = []
         # 1. Populate H-level superfamily name when H-code comes from official TED, G3DSA, or profile-to-CATH map
         if depth >= 4 and estimation_source in {
             "ted_official",
             "g3dsa_overlap",
             "ted_t_plus_g3dsa",
+            "ted_t_plus_g3dsa_h",
             "profile_cath_map",
+            "ted_t_plus_profile",
         }:
             h_code_numeric = ".".join(num_parts[:4])
-            await self._populate_h_level_from_interpro(h_code_numeric, resolution)
-            await self._populate_funfams(h_code_numeric, resolution)
+            # Check if overlapping_annotations already has G3DSA:{h_code_numeric} with integrated_ipr_name
+            pre_resolved = False
+            if overlapping_annotations:
+                target_g3d = f"G3DSA:{h_code_numeric}".upper()
+                for a in overlapping_annotations:
+                    if a.accession.upper() == target_g3d and (a.integrated_ipr_name or a.name):
+                        resolution.integrated_ipr = a.integrated_ipr
+                        resolution.superfamily_name = (a.integrated_ipr_name or a.name).rstrip(".")
+                        pre_resolved = True
+                        break
+            if not pre_resolved:
+                tasks.append(self._populate_h_level_from_interpro(h_code_numeric, resolution))
+            tasks.append(self._populate_funfams(h_code_numeric, resolution))
 
-        # 2. Populate T, A, C names from CATH cathtree using the underlying numeric codes
-        if t_code_numeric:
-            resolution.topology_name = await self._fetch_cathtree_name(t_code_numeric, 3)
-        if a_code_numeric:
-            resolution.architecture_name = await self._fetch_cathtree_name(a_code_numeric, 2)
-        if c_code_numeric:
-            resolution.class_name = await self._fetch_cathtree_name(c_code_numeric, 1)
+        # 2. Populate T, A, C names concurrently from CATH cathtree
+        async def _set_t() -> None:
+            if t_code_numeric:
+                resolution.topology_name = await self._fetch_cathtree_name(t_code_numeric, 3)
+
+        async def _set_a() -> None:
+            if a_code_numeric:
+                resolution.architecture_name = await self._fetch_cathtree_name(a_code_numeric, 2)
+
+        tasks.append(_set_t())
+        tasks.append(_set_a())
+        if tasks:
+            await asyncio.gather(*tasks)
 
         if self.cache:
             self.cache.set("cath_resolution_v3", cache_key, resolution.model_dump())

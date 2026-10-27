@@ -1,0 +1,93 @@
+{
+  "cath_holdout_validation": {
+    "n_official": 14299,
+    "cascade_a": {
+      "c_acc": 0.981467235471012,
+      "ca_acc": 0.9507657878173299,
+      "cat_acc": 0.9376879502063081,
+      "cath_acc": 0.9106231204979369,
+      "by_src": {
+        "g3dsa_overlap": 12166,
+        "rule_3d_sse": 732,
+        "profile_cath_map": 1401
+      },
+      "src_cat_acc": {
+        "g3dsa_overlap": 0.9808482656583922,
+        "rule_3d_sse": 0.21448087431693988,
+        "profile_cath_map": 0.940756602426838
+      },
+      "direct_level_precision": {
+        "1": 0.981467235471012,
+        "2": 0.9842798044377585,
+        "3": 0.9815692469720906,
+        "4": 0.9978586723768736
+      },
+      "direct_level_counts": {
+        "1": 14299,
+        "2": 13295,
+        "3": 13293,
+        "4": 10274
+      }
+    },
+    "cascade_b_no_g3dsa": {
+      "c_acc": 0.9622351213371565,
+      "ca_acc": 0.8792922581998741,
+      "cat_acc": 0.8481012658227848,
+      "cath_acc": 0.7887964193300231,
+      "profile_map_coverage": 0.8543954122665921,
+      "profile_map_c_acc": 0.9899320618809855,
+      "profile_map_ca_acc": 0.9765081443889662,
+      "profile_map_cat_acc": 0.9675042972906606,
+      "profile_map_cath_acc": 0.9215028239338626
+    },
+    "cascade_c_pure_3d_sse": {
+      "c_acc": 0.8586614448562837,
+      "pure_alpha_or_beta_c_acc": 0.9577579203899269,
+      "ca_acc": 0.41219665710888875,
+      "cat_acc": 0.2457514511504301
+    }
+  },
+  "naming_validation_and_refresh": {
+    "lodo_n": 6842,
+    "lodo_exact_concordance": 0.8441976030400468,
+    "lodo_semantic_concordance": 0.9406606255480854,
+    "legacy_pdb_noise_before": 2,
+    "legacy_pdb_noise_after": 2,
+    "sublobe_domains_resolved": 887,
+    "mean_confidence": 0.8353103,
+    "mean_conf_by_tier": {
+      "superfamily": 0.8158092092092092,
+      "specific_domain": 0.9106347583643123,
+      "protein_family_context": 0.42806075949367084,
+      "topology_fold": 0.23477118644067796
+    },
+    "tiers": {
+      "superfamily": 0.24975,
+      "specific_domain": 0.6456,
+      "protein_family_context": 0.09875,
+      "topology_fold": 0.0059
+    },
+    "cath_sources": {
+      "ted_official": 0.71495,
+      "ted_t_plus_sse": 0.05,
+      "profile_cath_map": 0.04355,
+      "ted_t_plus_profile": 0.03955,
+      "rule_sse_alpha_horseshoe_1.25": 0.01115,
+      "g3dsa_overlap": 0.0333,
+      "rule_sse_beta_sandwich_2.60": 0.00415,
+      "rule_sse_beta_barrel_2.40": 0.00245,
+      "rule_sse_updown_bundle_1.20": 0.03825,
+      "rule_sse_3layer_rossmann_3.40": 0.0153,
+      "rule_sse_2layer_sandwich_3.30": 0.0086,
+      "rule_alpha_hairpin_1.10.287": 0.00465,
+      "ted_t_plus_g3dsa": 0.0188,
+      "rule_sse_beta_roll_2.30": 0.00525,
+      "rule_sse_orthogonal_bundle_1.10": 0.0031,
+      "rule_alpha_coiled_coil_1.20.5": 0.0034,
+      "rule_class4_irregular": 0.00155,
+      "rule_ub_roll_3.10.20": 0.00185,
+      "rule_beta_propeller_2.130.10": 0.00015
+    },
+    "conf_below_50_pct": 0.099
+  }
+}

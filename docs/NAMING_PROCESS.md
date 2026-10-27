@@ -108,20 +108,20 @@ To ensure users can immediately distinguish confirmed structural levels from heu
 
 ### The 5-Step Cascade
 1. **Step 1 — Official TED 4-Level Assignment (`ted_official`)**:
-   - When TED provides a full 4-number `cath_label` (`C.A.T.H`), all four levels are retained directly (`known_depth = 4`, **69.8%** of domains).
+   - When TED provides a full 4-number `cath_label` (`C.A.T.H`), all four levels are retained directly (`known_depth = 4`, **71.5%** of domains across 20,000 benchmark domains).
 2. **Step 2 — Official TED 3-Level Topology + H-Level Completion (`ted_t_plus_*`)**:
-   - When TED provides a 3-number topology (`C.A.T`, **11.6%** of domains):
+   - When TED provides a 3-number topology (`C.A.T`, **10.8%** of domains):
      - If an overlapping `G3DSA:C.A.T.H` entry shares the exact same `C.A.T` prefix with $\text{IoU} \ge 0.65$ and $\text{Cov}_{\text{TED}} \ge 0.75$, the 4th level $H$ is promoted as confirmed (`known_depth = 4`, `ted_t_plus_g3dsa_h`).
      - If `G3DSA` or `profile_cath_map` matches the `C.A.T` prefix at moderate overlap ($\text{IoU} \ge 0.30$), $H$ is formatted with a `T` prefix (`C.A.T.T{H}`, `known_depth = 3`).
      - Otherwise, `.T10` is appended (`C.A.T.T10`, `known_depth = 3`, `ted_t_estimated_h`).
 3. **Step 3 — High-Overlap CATH-Gene3D Inference (`g3dsa_overlap`)**:
    - When TED `cath_label = "-"`, the classifier inspects overlapping InterPro `CATH-Gene3D` (`G3DSA:C.A.T.H`) hits:
      - **High overlap** ($\text{IoU} \ge 0.65$ and $\text{Cov}_{\text{TED}} \ge 0.75$): All 4 levels are emitted without `T` (`known_depth = 4`, **99.8% empirical H-level accuracy**).
-     - **Moderate overlap** ($\text{IoU} \ge 0.40$ or $\text{Cov}_{\text{TED}} \ge 0.65$): `C.A.T` is emitted without `T` and $H$ carries `T` (`C.A.T.T{H}`, `known_depth = 3`, **97.9% empirical T-level accuracy**).
+     - **Moderate overlap** ($\text{IoU} \ge 0.40$ or $\text{Cov}_{\text{TED}} \ge 0.65$): `C.A.T` is emitted without `T` and $H$ carries `T` (`C.A.T.T{H}`, `known_depth = 3`, **98.2% empirical T-level accuracy**).
 4. **Step 4 — Curated Profile-to-CATH Bridge (`profile_cath_map`)**:
    - Many domains with `cath_label = "-"` lack a `G3DSA` hit in InterPro but have a strong sequence profile hit in **`Pfam`**, **`SUPERFAMILY` (`ssf`)**, **`CDD`**, **`SMART`**, or **`InterPro` (`IPR`)**.
    - `ted-namer` includes a bundled lookup table ([`ted_namer/data/profile_cath_map.json`](../ted_namer/data/profile_cath_map.json)) of **19,304 sequence profiles** whose empirical mapping to CATH has $\ge 85\%$ `C.A.T` fold purity.
-   - When a high-purity profile overlaps the TED domain ($\text{IoU} \ge 0.40$ or $\text{Cov}_{\text{TED}} \ge 0.65$), it assigns `C.A.T.T{H}` (`known_depth = 3`, **96.4% out-of-sample `C.A.T` accuracy** in 5-fold cross-validation).
+   - When a high-purity profile overlaps the TED domain ($\text{IoU} \ge 0.40$ or $\text{Cov}_{\text{TED}} \ge 0.65$), it assigns `C.A.T.T{H}` (`known_depth = 3`, **96.8% out-of-sample `C.A.T` accuracy** in 5-fold cross-validation across $N = 14,299$ official CATH domains).
 5. **Step 5 — Direct 3D Coordinate Geometry & Calibrated SSE Rules (`rule_3d_*` / `rule_sse_*`)**:
    - When no homologous sequence profile maps to CATH, [`classify_cath_with_rules`](../ted_namer/cath_classifier.py) analyzes the domain's 3D $\text{C}\alpha$ coordinates and secondary structure elements (SSEs):
      - **3D C-alpha SSE Extraction**: Uses Levitt & Greer $\text{C}\alpha$ local curvature ($d_{i,i+2}, d_{i,i+3}, d_{i,i+4}$ and dihedral angles) to identify $\alpha$-helices and $\beta$-strands directly from coordinates when needed.
@@ -144,10 +144,10 @@ To ensure users can immediately distinguish confirmed structural levels from heu
 ```mermaid
 graph TB
     subgraph Tiers["4-Tier Specificity Hierarchy"]
-        T1["Tier 1: Specific Domain (W = 1.00, 64.4% of domains)\n• Direct domain/repeat match (IoU >= 0.35 or both cov >= 0.50)\n• OR Multi-Lobe Structural Subdomain (Cov_TED >= 0.80, 0.20 <= Cov_Annot < 0.50)\n  e.g. 'p53 DNA-binding domain', 'Protein kinase N-terminal subdomain'"]
-        T2["Tier 2: Homologous Superfamily (W = 0.85, 23.9% of domains)\n• Curated Integrated InterPro Superfamily name prioritized over raw G3DSA\n• Source: CATH H-level, CATH-Gene3D, SUPERFAMILY, InterPro superfamily\n  e.g. 'P-loop containing nucleoside triphosphate hydrolase'"]
-        T3["Tier 3: Protein Family + Positional Context (W = 0.65, 11.7% of domains)\n• Whole-protein family (PANTHER, UniProt SIMILARITY, or Recommended Name)\n• Combined with domain's spatial position & scaled by L_domain / L_protein\n  e.g. 'BioU C-terminal domain'"]
-        T4["Tier 4: Topology / Fold Fallback (W = 0.45, 0.03% of domains)\n• 3-digit CATH Topology name when protein is completely uncharacterized\n  e.g. 'Rossmann-like alpha/beta/alpha sandwich fold'"]
+        T1["Tier 1: Specific Domain (W = 1.00, 64.6% of domains)\n• Direct domain/repeat match (IoU >= 0.35 or both cov >= 0.50)\n• OR Multi-Lobe Structural Subdomain (Cov_TED >= 0.80, 0.20 <= Cov_Annot < 0.50)\n  e.g. 'p53 DNA-binding domain', 'Cytochrome P450 central subdomain'"]
+        T2["Tier 2: Homologous Superfamily (W = 0.85, 25.0% of domains)\n• Curated Integrated InterPro Superfamily name prioritized over raw G3DSA\n• Source: CATH H-level, CATH-Gene3D, SUPERFAMILY, InterPro superfamily\n  e.g. 'P-loop containing nucleoside triphosphate hydrolase'"]
+        T3["Tier 3: Protein Family + Positional Context (W = 0.65, 9.9% of domains)\n• Whole-protein family (PANTHER, UniProt SIMILARITY, or Recommended Name)\n• Combined with domain's spatial position & scaled by L_domain / L_protein\n  e.g. 'BioU C-terminal domain'"]
+        T4["Tier 4: Topology / Fold Fallback (W = 0.45, 0.59% of domains)\n• 3-digit CATH Topology name when protein is completely uncharacterized\n  e.g. 'Rossmann-like alpha/beta/alpha sandwich fold'"]
     end
     T1 -->|If absent| T2
     T2 -->|If absent| T3
@@ -216,42 +216,47 @@ $$S(c) = \min\!\Big(1.0,\; W_{\text{tier}}(c) \times \Omega(c) \times P_{\text{q
 
 ## 8. Concrete Case Studies Across Resolution Paths
 
-Below are representative real-world examples from our 10,000-domain benchmark illustrating each resolution path:
+Below are representative real-world examples from our 20,000-domain benchmark illustrating each resolution path:
 
-### Case 1: Multi-Lobe Subdomain Resolution (Tier 1)
-- **Domain ID**: `AF-A0A075B6P9-F1-model_v4_TED01`
-- **Residue Boundaries**: `12-98` (N-terminal structural lobe of a larger catalytic domain)
-- **Overlap Metrics**: Fully contained inside the parent InterPro/Pfam domain ($\text{Cov}_{\text{TED}} = 0.96$), covering the N-terminal $34\%$ of the full domain profile ($\text{Cov}_{\text{Annot}} = 0.34$, raw $\text{IoU} = 0.33$).
-- **Resolution**: Recognized as an N-terminal structural lobe of a split canonical domain (`is_subdomain_lobe = True`), assigned **Tier 1 (`specific_domain`)** with the explicit `N-terminal subdomain` qualifier instead of dropping to a generic superfamily or whole-protein label.
-
-### Case 2: Profile-to-CATH Bridge on an Unclassified TED Domain (`cath_label = "-"`)
-- **Scenario**: A TED domain has `cath_label = "-"` in the TED database and no `G3DSA` entry in InterPro, but matches `Pfam:PF00005` (*ABC transporter*) with $\text{IoU} = 0.88$.
+### Case 1: Multi-Lobe Subdomain Resolution + Gene3D Overlap (`AF-A4F4K3-F1-model_v4_TED02`)
+- **Protein**: Cytochrome P450 CYP1A1 (`A4F4K3`)
+- **Residue Boundaries**: `107-146` (40 residues, mean pLDDT: 94.4)
+- **Raw CATH in TED**: `-` (Unclassified)
 - **Resolution**:
-  - **CATH Classification**: Step 4 (`profile_cath_map`) maps `PF00005` $\to$ `3.40.50.300` with $99.9\%$ empirical purity, assigning **`3.40.50.T300`** (`known_depth = 3`).
-  - **Domain Name**: **`ABC transporter-like, ATP-binding domain`** (Tier 1: `specific_domain`, confidence: `0.94`).
+  - **CATH Classification**: Step 3 (`g3dsa_overlap` with `G3DSA:1.10.630.10`) assigns **`1.10.630.T10`** (`known_depth = 3`).
+  - **Domain Name**: Recognized as an internal structural lobe of the full Cytochrome P450 (`PF00067`) profile ($\text{Cov}_{\text{TED}} = 1.00$), assigned **`Cytochrome P450 central subdomain`** (Tier 1: `specific_domain`, confidence: `0.772`).
 
-### Case 3: Direct 3D Coordinate Geometry on an Unannotated Domain (`cath_label = "-"`)
-- **Domain ID**: `AF-A0A1G9Z131-F1-model_v4_TED02`
-- **Protein**: BioU (`A0A1G9Z131`, *Corynebacterium*, length 319 aa)
-- **Residue Boundaries**: `182-316` (135 residues, mean pLDDT: 94.3, 7 $\alpha$-helices, 5 $\beta$-strands)
-- **Raw CATH in TED**: `-` (Unclassified, no sequence profile hits in Pfam/CDD/G3DSA)
+### Case 2: Profile-to-CATH Bridge on an Unclassified TED Domain (`AF-Q8U3D2-F1-model_v4_TED01`)
+- **Protein**: Argonaute `ago` (`Q8U3D2`, *Pyrococcus*, discontinuous boundaries `1-146_284-319`, 182 residues)
+- **Raw CATH in TED**: `-` (Unclassified)
 - **Resolution**:
-  - **CATH Classification**: Step 5 (`rule_3d_3layer_aba_rossmann_3.40.50`) fits the 5-stranded $\beta$-sheet plane via SVD and detects $\alpha$-helices on both opposite faces ($d^+ > 0, d^- < 0$), assigning **`3.T40.T50.T10`** (`known_depth = 1`: Class 3 confirmed, `T40.T50.T10` geometrically estimated).
-  - **Domain Name**: **`BioU C-terminal domain`** (Tier 3: `protein_family_context`, confidence: `0.422`, scaled honestly by the domain-to-protein ratio $135/319$).
+  - **CATH Classification**: Step 4 (`profile_cath_map`) maps the overlapping domain profile directly to **`3.90.70.T180`** (`known_depth = 3`).
+  - **Domain Name**: **`N-terminal domain`** (Tier 1: `specific_domain`, confidence: `0.820`).
+
+### Case 3: Direct 3D Coordinate Geometry on Unassigned CATH Domains (`AF-O05442-F1-model_v4_TED01` & `AF-P0ABG4-F1-model_v4_TED02`)
+- **`AF-O05442-F1-model_v4_TED01`** (CpnT, *Bacillus*, 3-segment discontinuous `8-109_120-240_256-309`):
+  - **Raw CATH in TED**: `-` (Unclassified, 6 $\alpha$-helices, 0 $\beta$-strands)
+  - **CATH Classification**: Step 5 (`rule_sse_alpha_horseshoe_1.25`) detects repetitive $\alpha$-solenoid curvature, assigning **`1.T25.T40.T10`** (`known_depth = 1`).
+  - **Domain Name**: **`NTD domain`** (Tier 1: `specific_domain`, confidence: `0.787`).
+- **`AF-P0ABG4-F1-model_v4_TED02`** (Cell division protein FtsW, *E. coli*, boundaries `113-239`):
+  - **Raw CATH in TED**: `-` (Unclassified, 5 $\alpha$-helices, 3 $\beta$-strands)
+  - **CATH Classification**: Step 5 (`rule_sse_2layer_sandwich_3.30`) detects single-sided helix-sheet packing, assigning **`3.T30.T70.T10`** (`known_depth = 1`).
+  - **Domain Name**: **`Cell cycle protein domain`** (Tier 1: `specific_domain`, confidence: `0.605`).
 
 ---
 
-## 9. Empirical Validation on 10,000 Random TED Domains
+## 9. Empirical Validation on 20,000 Random TED Domains (20 Independent Batches of 1,000)
 
-The complete calibrated pipeline was validated on **10,000 randomly sampled TED domains** (10 independent batches of 1,000 domains across 27 taxonomic kingdoms) and audited via held-out cross-validation in [`docs/ACCURACY_VALIDATION.md`](ACCURACY_VALIDATION.md):
+The complete calibrated pipeline was validated on **20,000 randomly sampled TED domains**—comprising **Batches 1–10 (10,000 domains)** and an independent out-of-sample replication set of **Batches 11–20 (10,000 strictly disjoint domains)**—and audited via blind hold-out cross-validation ($N = 14,299$ official 4-level CATH domains) in [`docs/ACCURACY_VALIDATION.md`](ACCURACY_VALIDATION.md):
 
-| Validation Metric | Result on 10,000 TED Domains |
-| :--- | :---: |
-| **Tier 1 (`specific_domain`, incl. multi-lobe subdomains)** | **64.4%** (6,440 / 10,000) |
-| **Tier 2 (`superfamily`, curated Integrated IPR priority)** | **23.9%** (2,391 / 10,000) |
-| **Tier 3 (`protein_family_context`, positional fallback)** | **11.7%** (1,166 / 10,000) |
-| **Tier 4 (`topology_fold`, fold-only fallback)** | **0.03%** (3 / 10,000) |
-| **Specific Domain or Superfamily Resolution (Tier 1 + Tier 2)** | **88.3%** (8,831 / 10,000) |
-| **Legacy PDB Header Artifacts Remaining** | **0.02%** (reduced by **99.0%**, from 208 to 2) |
-| **CATH Non-`T` Precision ($C$ / $C.A$ / $C.A.T$ / $C.A.T.H$)** | **97.9% / 98.2% / 97.9% / 99.8%** |
-| **Profile-to-CATH 5-Fold CV Accuracy ($C$ / $C.A$ / $C.A.T$ / $C.A.T.H$)** | **99.0% / 97.3% / 96.4% / 91.4%** |
+| Validation Metric | Batches 1–10 (10k) | Batches 11–20 (10k New) | **Combined 20,000 TED Domains** |
+| :--- | :---: | :---: | :---: |
+| **Mean Calibrated Confidence Score** | 0.827 | 0.843 | **0.835** |
+| **Tier 1 (`specific_domain`, incl. 887 multi-lobe subdomains)** | 64.4% | 64.7% | **64.6%** (12,912 / 20,000) |
+| **Tier 2 (`superfamily`, curated Integrated IPR priority)** | 23.9% | 26.1% | **25.0%** (4,995 / 20,000) |
+| **Specific Domain or Superfamily Resolution (Tier 1 + Tier 2)** | **88.3%** | **90.8%** | **89.5%** (17,907 / 20,000) |
+| **Tier 3 (`protein_family_context`, positional fallback)** | 11.7% | 8.1% | **9.9%** (1,975 / 20,000) |
+| **Tier 4 (`topology_fold`, fold-only fallback)** | 0.03% | 1.15% | **0.59%** (118 / 20,000) |
+| **Legacy PDB Header Artifacts Remaining** | 0.02% | 0.00% | **0.01%** (2 / 20,000, **>99% reduction**) |
+| **CATH Non-`T` Precision ($C$ / $C.A$ / $C.A.T$ / $C.A.T.H$, $N = 14,299$)** | 97.9–99.8% | 98.3–99.8% | **98.1% / 98.4% / 98.2% / 99.8%** |
+| **Profile-to-CATH 5-Fold CV Accuracy ($C$ / $C.A$ / $C.A.T$ / $C.A.T.H$)** | 99.0 / 97.3 / 96.4 / 91.4% | 99.0 / 98.0 / 97.1 / 92.8% | **99.0% / 97.7% / 96.8% / 92.2%** |

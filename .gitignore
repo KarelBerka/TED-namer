@@ -36,6 +36,7 @@ htmlcov/
 
 # Large Benchmark JSON Data dumps (>50MB) and multi-megabyte reports
 examples/*.json
+!examples/*_summary.json
 examples/*_additional_*
 examples/random_4000_report.md
 examples/random_5000_report.md

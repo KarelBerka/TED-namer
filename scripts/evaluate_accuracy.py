@@ -329,22 +329,33 @@ def evaluate_naming_concordance_and_refresh(results: list[ClusterNamingResult]) 
 
 def main() -> None:
     cache = ApiCache()
-    results_path = Path("examples/random_10000_results.json")
-    print(f"Loading {results_path}...")
-    raw_data = json.loads(results_path.read_text(encoding="utf-8"))
+    results_10k_path = Path("examples/random_10000_results.json")
+    results_20k_path = Path("examples/random_20000_results.json")
+    target_path = results_20k_path if results_20k_path.exists() else results_10k_path
+
+    print(f"Loading {target_path}...")
+    raw_data = json.loads(target_path.read_text(encoding="utf-8"))
     results = [ClusterNamingResult.model_validate(x) for x in raw_data]
 
     cath_eval = evaluate_cath_holdout(results, cache)
     naming_eval = evaluate_naming_concordance_and_refresh(results)
 
     refreshed = naming_eval.pop("refreshed_results")
-    print("\nSaving refreshed 10,000 domain results...")
-    save_output(refreshed, Path("examples/random_10000_results.json"))
-    save_output(refreshed, Path("examples/random_10000_results.tsv"))
+    print(f"\nSaving refreshed {len(refreshed)} domain results...")
+    save_output(refreshed, target_path)
+    save_output(refreshed, target_path.with_suffix(".tsv"))
+    if len(refreshed) >= 20000:
+        save_output(refreshed[:10000], Path("examples/random_10000_results.json"))
+        save_output(refreshed[:10000], Path("examples/random_10000_results.tsv"))
+        save_output(refreshed[10000:20000], Path("examples/random_10000_batches_11_to_20.json"))
+        save_output(refreshed[10000:20000], Path("examples/random_10000_batches_11_to_20.tsv"))
 
     summary = {"cath_holdout_validation": cath_eval, "naming_validation_and_refresh": naming_eval}
+    Path("examples/accuracy_validation_20000_summary.json").write_text(
+        json.dumps(summary, indent=2), encoding="utf-8"
+    )
     print("\n" + "=" * 90)
-    print("ACCURACY & CROSS-VALIDATION SUMMARY (10,000 TED DOMAINS)")
+    print(f"ACCURACY & CROSS-VALIDATION SUMMARY ({len(refreshed)} TED DOMAINS)")
     print("=" * 90)
     print(json.dumps(summary, indent=2))
 

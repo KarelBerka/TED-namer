@@ -25,7 +25,7 @@ bibliography: paper.bib
 
 The expansion of the AlphaFold Protein Structure Database (AFDB) to over 214 million predicted structures [@Jumper2021AlphaFold; @Varadi2024AFDB] enabled the creation of **The Encyclopedia of Domains (TED)**, which catalogs more than 365 million structural domains segmented across the protein universe [@Lau2024TED]. While TED provides high-accuracy continuous and discontinuous structural domain boundaries alongside partial CATH fold assignments, individual TED domains and structural clusters are identified solely by positional numeric tags (e.g., `AF-P04637-F1-model_v4_TED02`).
 
-`ted-namer` is an open-source, asynchronous Python package and command-line tool that assigns standardized, human-readable biological names, specificity tiers, calibrated confidence scores, and four-level CATH structural classifications (`C.A.T.H`) to individual TED domains and multi-member structural clusters. By integrating exact residue-set boundary overlap across EBI InterPro [@PaysanLafosse2023InterPro], Pfam [@Mistry2021Pfam], CDD [@Wang2023CDD], UniProtKB [@UniProt2023], and CATH [@Sillitoe2021CATH; @Waman2024CATH] with a 19,304-entry sequence-profile-to-CATH bridge and direct 3D $\text{C}\alpha$ coordinate geometry rules, `ted-namer` resolves specific domain or homologous superfamily names for 88.3% of TED domains and achieves 100% CATH classification coverage with calibrated uncertainty notation.
+`ted-namer` is an open-source, asynchronous Python package and command-line tool that assigns standardized, human-readable biological names, specificity tiers, calibrated confidence scores, and four-level CATH structural classifications (`C.A.T.H`) to individual TED domains and multi-member structural clusters. By integrating exact residue-set boundary overlap across EBI InterPro [@PaysanLafosse2023InterPro], Pfam [@Mistry2021Pfam], CDD [@Wang2023CDD], UniProtKB [@UniProt2023], and CATH [@Sillitoe2021CATH; @Waman2024CATH] with a 19,304-entry sequence-profile-to-CATH bridge and direct 3D $\text{C}\alpha$ coordinate geometry rules, `ted-namer` resolves specific domain or homologous superfamily names for 89.5% of TED domains across a 20,000-domain benchmark and achieves 100% CATH classification coverage with calibrated uncertainty notation.
 
 # Statement of Need
 
@@ -62,21 +62,21 @@ Given one or more TED domain IDs, [`TedNamingPipeline`](https://github.com/Karel
 
 # Empirical Validation and Accuracy
 
-We evaluated `ted-namer` on **10,000 randomly sampled TED domains** (10 independent batches of 1,000 domains across 27 taxonomic kingdoms) and performed blind hold-out cross-validation on the $N = 6,979$ domains carrying official 4-level CATH assignments (\autoref{fig:validation}).
+We evaluated `ted-namer` on **20,000 randomly sampled TED domains** across 20 independent batches of 1,000 domains (comprising an initial 10,000-domain calibration set in Batches 1--10 and a strictly disjoint 10,000-domain out-of-sample replication set in Batches 11--20) and performed blind hold-out cross-validation on the $N = 14,299$ domains carrying official 4-level CATH assignments (\autoref{fig:validation}).
 
-![Empirical validation of `ted-namer` across 10,000 randomly sampled TED domains. (A) Distribution of assigned biological naming specificity tiers, with 88.3% of domains resolved to a specific functional domain/subdomain (Tier 1) or homologous superfamily (Tier 2). (B) Blind hold-out CATH classification accuracy across hierarchy levels for non-`T` direct predictions, 5-fold cross-validation of the Profile-to-CATH bridge, and the full fallback cascade.\label{fig:validation}](figure1_validation.png)
+![Empirical validation of `ted-namer` across 20,000 randomly sampled TED domains (20 batches of 1,000 domains). (A) Distribution of assigned biological naming specificity tiers, with 89.5% of domains resolved to a specific functional domain/subdomain (Tier 1) or homologous superfamily (Tier 2). (B) Blind hold-out CATH classification accuracy across hierarchy levels ($N = 14,299$) for non-`T` direct predictions, 5-fold cross-validation of the Profile-to-CATH bridge, and the full fallback cascade.\label{fig:validation}](figure1_validation.png)
 
-Across all 10,000 domains, **64.4%** received a Tier 1 specific domain or multi-lobe subdomain name (mean confidence $0.905$), **23.9%** received a Tier 2 homologous superfamily name (mean confidence $0.817$), **11.7%** received a Tier 3 positional protein family name (mean confidence $0.426$), and only **0.03%** (3 / 10,000) required a Tier 4 fold-only fallback. Prioritizing integrated InterPro superfamily names over raw `G3DSA` headers reduced legacy PDB title artifacts by **99.0%** (from 208 to 2 across 10,000 domains). In leave-one-database-out testing ($N = 3,388$ domains where `Pfam` was held out), `ted-namer` achieved **87.5%** exact normalized name concordance and **95.2%** semantic keyword concordance.
+Across all 20,000 domains, **64.6%** (12,912; 64.4% in Batches 1--10 and 64.7% in Batches 11--20) received a Tier 1 specific domain or multi-lobe subdomain name (mean confidence $0.911$), **25.0%** (4,995; 23.9% in Batches 1--10 and 26.1% in Batches 11--20) received a Tier 2 homologous superfamily name (mean confidence $0.816$), **9.9%** (1,975) received a Tier 3 positional protein family name (mean confidence $0.428$), and **0.59%** (118, predominantly unreviewed TrEMBL proteins annotated as *"Uncharacterized protein"*) received a Tier 4 fold-only fallback (mean confidence $0.235$). Prioritizing integrated InterPro superfamily names over raw `G3DSA` headers restricted legacy PDB title artifacts to **0.01%** (2 / 20,000 domains, a $>99\%$ reduction). In leave-one-database-out testing ($N = 6,842$ domains where `Pfam` was held out), `ted-namer` achieved **84.4%** exact normalized name concordance and **94.1%** semantic keyword concordance.
 
-| Validation Benchmark | Class ($C$) | Architecture ($C.A$) | Topology ($C.A.T$) | Superfamily ($C.A.T.H$) |
+| Validation Benchmark ($N = 14,299$) | Class ($C$) | Architecture ($C.A$) | Topology ($C.A.T$) | Superfamily ($C.A.T.H$) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Non-`T` Direct Precision** ($N = 6,979$) | **97.9%** | **98.2%** | **97.9%** | **99.8%** |
-| **`Profile-to-CATH` Bridge (5-Fold CV)** | **99.0%** | **97.3%** | **96.4%** | **91.4%** |
-| **Full Fallback Cascade** (Mask TED CATH) | **97.9%** | **93.9%** | **92.3%** | **89.4%** |
+| **Non-`T` Direct Precision** | **98.1%** | **98.4%** | **98.2%** | **99.8%** |
+| **`Profile-to-CATH` Bridge (5-Fold CV)** | **99.0%** | **97.7%** | **96.8%** | **92.2%** |
+| **Full Fallback Cascade** (Mask TED CATH) | **98.1%** | **95.1%** | **93.8%** | **91.1%** |
 
 # Availability
 
-`ted-namer` is available under the MIT License at [https://github.com/KarelBerka/TED-namer](https://github.com/KarelBerka/TED-namer), including the full 10,000-domain benchmark dataset (`examples/random_10000_results.tsv`) and reproducible accuracy evaluation suite (`scripts/evaluate_accuracy.py`).
+`ted-namer` is available under the MIT License at [https://github.com/KarelBerka/TED-namer](https://github.com/KarelBerka/TED-namer), including the full 20,000-domain benchmark dataset (`examples/random_20000_results.tsv`) and reproducible accuracy evaluation suite (`scripts/evaluate_accuracy.py`).
 
 # Acknowledgements
 

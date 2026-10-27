@@ -69,22 +69,23 @@ class TedNamingPipeline:
             all_annots = list(ipr_annots) + list(uni_feats)
             all_annots.sort(key=lambda a: (a.iou, a.ted_coverage), reverse=True)
 
-            # Fetch 3D PDB C-alpha trace when CATH is unassigned in TED so 3D geometric rules can determine A & T directly
-            pdb_text: Optional[str] = None
-            raw_ted = (member.cath_label or "-").split(",")[0].strip()
-            has_g3dsa = any(
-                a.source_db == "cathgene3d" or a.accession.upper().startswith("G3DSA:")
-                for a in all_annots
-            )
-            if ted_client is not None and (raw_ted == "-" or len(raw_ted.split(".")) < 3) and not has_g3dsa:
-                pdb_text = await ted_client.get_domain_pdb(member.ted_id)
-
-            # Infer full 4-level CATH classification (direct rules without 'T', estimated levels with 'T')
+            # First attempt CATH classification using TED official, G3DSA overlap, and Profile-to-CATH map
             inferred_cath, _numeric_cath, est_source = infer_cath_classification(
                 member=member,
                 overlapping_annotations=all_annots,
-                pdb_text=pdb_text,
+                pdb_text=None,
             )
+
+            # Only fetch 3D PDB C-alpha trace when sequence/structural profiles could not resolve CATH
+            if ted_client is not None and est_source.startswith("rule_"):
+                pdb_text = await ted_client.get_domain_pdb(member.ted_id)
+                if pdb_text:
+                    inferred_cath, _numeric_cath, est_source = infer_cath_classification(
+                        member=member,
+                        overlapping_annotations=all_annots,
+                        pdb_text=pdb_text,
+                    )
+
             member.inferred_cath_label = inferred_cath
             member.cath_estimation_source = est_source
 
@@ -92,6 +93,7 @@ class TedNamingPipeline:
                 cath_label=inferred_cath,
                 raw_ted_cath_label=member.cath_label,
                 estimation_source=est_source,
+                overlapping_annotations=all_annots,
             )
 
         prot_len = prot_ctx.protein_length if prot_ctx else 0
@@ -116,22 +118,29 @@ class TedNamingPipeline:
         semaphore = asyncio.Semaphore(self.concurrency)
         headers = {"User-Agent": "ted-namer/0.1.0 (https://ted.cathdb.info)"}
 
-        async with httpx.AsyncClient(headers=headers, follow_redirects=True) as http:
+        limits = httpx.Limits(max_connections=max(100, self.concurrency * 3), max_keepalive_connections=50)
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True, limits=limits) as http:
             ted_client = TedClient(http_client=http, cache=self.cache)
             interpro_client = InterProClient(http_client=http, cache=self.cache)
             cath_client = CathClient(http_client=http, cache=self.cache)
             uniprot_client = UniProtClient(http_client=http, cache=self.cache)
 
-            # 1. Resolve all identifiers to TedDomainMember objects
+            # 1. Resolve all identifiers to TedDomainMember objects concurrently
             resolved_clusters: dict[str, list[TedDomainMember]] = defaultdict(list)
-            for raw_cid, id_list in cluster_map.items():
+
+            async def _resolve_one(ident: str) -> list[TedDomainMember]:
+                async with semaphore:
+                    return await ted_client.resolve_identifier(ident)
+
+            async def _resolve_cluster_item(raw_cid: str, id_list: list[str]) -> tuple[str, list[list[TedDomainMember]]]:
                 sampled_ids = id_list[:max_members_per_cluster]
+                nested = await asyncio.gather(*(_resolve_one(i) for i in sampled_ids))
+                return raw_cid, list(nested)
 
-                async def _resolve_one(ident: str) -> list[TedDomainMember]:
-                    async with semaphore:
-                        return await ted_client.resolve_identifier(ident)
-
-                nested_members = await asyncio.gather(*(_resolve_one(i) for i in sampled_ids))
+            cluster_resolved_items = await asyncio.gather(
+                *(_resolve_cluster_item(raw_cid, id_list) for raw_cid, id_list in cluster_map.items())
+            )
+            for raw_cid, nested_members in cluster_resolved_items:
                 for dom_list in nested_members:
                     for dom in dom_list:
                         if group_by == "cath_label":
