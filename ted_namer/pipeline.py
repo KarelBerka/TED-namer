@@ -36,6 +36,7 @@ class TedNamingPipeline:
         llm_model: Optional[str] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
+        fetch_pdb: bool = True,
     ) -> None:
         self.cache = ApiCache(db_path=cache_path, enabled=use_cache)
         self.concurrency = max(1, concurrency)
@@ -44,6 +45,7 @@ class TedNamingPipeline:
         self.llm_model = llm_model
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
+        self.fetch_pdb = fetch_pdb
 
     async def enrich_ted_domain(
         self,
@@ -77,7 +79,7 @@ class TedNamingPipeline:
             )
 
             # Only fetch 3D PDB C-alpha trace when sequence/structural profiles could not resolve CATH
-            if ted_client is not None and est_source.startswith("rule_"):
+            if self.fetch_pdb and ted_client is not None and est_source.startswith("rule_"):
                 pdb_text = await ted_client.get_domain_pdb(member.ted_id)
                 if pdb_text:
                     inferred_cath, _numeric_cath, est_source = infer_cath_classification(
@@ -113,6 +115,7 @@ class TedNamingPipeline:
         group_by: str = "cluster_id",
         max_members_per_cluster: int = 50,
         progress_callback: Optional[Callable[[int, int], None]] = None,
+        pre_resolved_domains: Optional[dict[str, list[TedDomainMember]]] = None,
     ) -> list[ClusterNamingResult]:
         """Resolve TED identifiers in cluster_map, enrich members, and compute cluster names."""
         semaphore = asyncio.Semaphore(self.concurrency)
@@ -125,43 +128,58 @@ class TedNamingPipeline:
             cath_client = CathClient(http_client=http, cache=self.cache)
             uniprot_client = UniProtClient(http_client=http, cache=self.cache)
 
-            # 1. Resolve all identifiers to TedDomainMember objects concurrently
+            # 1. Resolve all identifiers to TedDomainMember objects concurrently (or use pre_resolved_domains)
             resolved_clusters: dict[str, list[TedDomainMember]] = defaultdict(list)
+            if pre_resolved_domains is not None:
+                for raw_cid, dom_list in pre_resolved_domains.items():
+                    resolved_clusters[raw_cid] = list(dom_list[:max_members_per_cluster])
+            else:
+                async def _resolve_one(ident: str) -> list[TedDomainMember]:
+                    async with semaphore:
+                        return await ted_client.resolve_identifier(ident)
 
-            async def _resolve_one(ident: str) -> list[TedDomainMember]:
-                async with semaphore:
-                    return await ted_client.resolve_identifier(ident)
+                async def _resolve_cluster_item(raw_cid: str, id_list: list[str]) -> tuple[str, list[list[TedDomainMember]]]:
+                    sampled_ids = id_list[:max_members_per_cluster]
+                    nested = await asyncio.gather(*(_resolve_one(i) for i in sampled_ids))
+                    return raw_cid, list(nested)
 
-            async def _resolve_cluster_item(raw_cid: str, id_list: list[str]) -> tuple[str, list[list[TedDomainMember]]]:
-                sampled_ids = id_list[:max_members_per_cluster]
-                nested = await asyncio.gather(*(_resolve_one(i) for i in sampled_ids))
-                return raw_cid, list(nested)
+                cluster_resolved_items = await asyncio.gather(
+                    *(_resolve_cluster_item(raw_cid, id_list) for raw_cid, id_list in cluster_map.items())
+                )
+                for raw_cid, nested_members in cluster_resolved_items:
+                    for dom_list in nested_members:
+                        for dom in dom_list:
+                            if group_by == "cath_label":
+                                target_cid = (
+                                    f"CATH_{dom.cath_label}"
+                                    if dom.cath_label and dom.cath_label != "-"
+                                    else f"UNASSIGNED_{dom.uniprot_acc}_{dom.short_ted_num}"
+                                )
+                            elif group_by == "single":
+                                target_cid = "cluster_1"
+                            else:
+                                target_cid = raw_cid
+                            # Deduplicate by ted_id within cluster
+                            if all(existing.ted_id != dom.ted_id for existing in resolved_clusters[target_cid]):
+                                resolved_clusters[target_cid].append(dom)
 
-            cluster_resolved_items = await asyncio.gather(
-                *(_resolve_cluster_item(raw_cid, id_list) for raw_cid, id_list in cluster_map.items())
-            )
-            for raw_cid, nested_members in cluster_resolved_items:
-                for dom_list in nested_members:
-                    for dom in dom_list:
-                        if group_by == "cath_label":
-                            target_cid = (
-                                f"CATH_{dom.cath_label}"
-                                if dom.cath_label and dom.cath_label != "-"
-                                else f"UNASSIGNED_{dom.uniprot_acc}_{dom.short_ted_num}"
-                            )
-                        elif group_by == "single":
-                            target_cid = "cluster_1"
-                        else:
-                            target_cid = raw_cid
-                        # Deduplicate by ted_id within cluster
-                        if all(existing.ted_id != dom.ted_id for existing in resolved_clusters[target_cid]):
-                            resolved_clusters[target_cid].append(dom)
-
-            # 2. Enrich all unique TED domains across clusters
+            # 2. Enrich all unique TED domains across clusters, batch-prefetching UniProt records (100/req) and InterPro once per protein
             unique_domains: dict[str, TedDomainMember] = {}
+            unique_uniprots: set[str] = set()
             for dom_list in resolved_clusters.values():
                 for d in dom_list:
                     unique_domains[d.ted_id] = d
+                    if d.uniprot_acc:
+                        unique_uniprots.add(d.uniprot_acc)
+
+            if unique_uniprots:
+                await uniprot_client.prefetch_uniprot_records(list(unique_uniprots), semaphore=semaphore)
+
+                async def _warm_interpro(acc: str) -> None:
+                    async with semaphore:
+                        await interpro_client.get_protein_entries(acc)
+
+                await asyncio.gather(*(_warm_interpro(acc) for acc in unique_uniprots))
 
             completed_count = 0
             total_enrich = len(unique_domains)

@@ -34,6 +34,50 @@ class UniProtClient:
         self.http = http_client
         self.cache = cache
 
+    async def prefetch_uniprot_records(self, accessions: list[str], semaphore: Optional[asyncio.Semaphore] = None) -> None:
+        """Batch-fetch up to 100 UniProtKB JSON records per HTTP request and store in cache."""
+        if not self.cache:
+            return
+        missing = [
+            acc.strip().upper()
+            for acc in accessions
+            if acc and self.cache.get("uniprot_record", acc.strip().upper()) is None
+        ]
+        if not missing:
+            return
+
+        # Deduplicate while preserving order
+        unique_missing = list(dict.fromkeys(missing))
+        chunk_size = 100
+
+        async def _fetch_chunk(chunk: list[str]) -> None:
+            url = f"{UNIPROT_API_BASE}/accessions"
+            params = {
+                "accessions": ",".join(chunk),
+                "format": "json",
+            }
+            for attempt in range(3):
+                try:
+                    if semaphore:
+                        async with semaphore:
+                            resp = await self.http.get(url, params=params, headers={"Accept": "application/json"}, timeout=25.0)
+                    else:
+                        resp = await self.http.get(url, params=params, headers={"Accept": "application/json"}, timeout=25.0)
+                    if resp.status_code == 200:
+                        results = resp.json().get("results") or []
+                        for rec in results:
+                            if isinstance(rec, dict) and rec.get("primaryAccession"):
+                                self.cache.set("uniprot_record", str(rec["primaryAccession"]).upper(), rec)
+                        return
+                    if resp.status_code in {429, 500, 502, 503, 504}:
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                except Exception:
+                    if attempt < 2:
+                        await asyncio.sleep(0.5 * (attempt + 1))
+
+        chunks = [unique_missing[i : i + chunk_size] for i in range(0, len(unique_missing), chunk_size)]
+        await asyncio.gather(*(_fetch_chunk(c) for c in chunks))
+
     async def get_uniprot_record(self, uniprot_acc: str) -> Optional[dict[str, Any]]:
         acc = uniprot_acc.strip().upper()
         if self.cache:

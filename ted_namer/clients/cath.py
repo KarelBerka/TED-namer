@@ -35,6 +35,7 @@ class CathClient:
         raw_ted_cath_label: str = "-",
         estimation_source: str = "ted_official",
         overlapping_annotations: Optional[list[OverlappingAnnotation]] = None,
+        include_funfams: bool = False,
     ) -> Optional[CathResolution]:
         """Resolve a CATH code (official or 'T'-prefixed estimate) to its hierarchy of names."""
         raw_code = (cath_label or "").strip()
@@ -89,31 +90,47 @@ class CathClient:
             "ted_t_plus_profile",
         }:
             h_code_numeric = ".".join(num_parts[:4])
-            # Check if overlapping_annotations already has G3DSA:{h_code_numeric} with integrated_ipr_name
             pre_resolved = False
-            if overlapping_annotations:
+            if self.cache:
+                cached_h = self.cache.get("cath_h_ipr", h_code_numeric)
+                if isinstance(cached_h, dict):
+                    resolution.integrated_ipr = cached_h.get("integrated_ipr")
+                    resolution.superfamily_name = cached_h.get("superfamily_name")
+                    pre_resolved = True
+
+            if not pre_resolved and overlapping_annotations:
                 target_g3d = f"G3DSA:{h_code_numeric}".upper()
                 for a in overlapping_annotations:
                     if a.accession.upper() == target_g3d and (a.integrated_ipr_name or a.name):
                         resolution.integrated_ipr = a.integrated_ipr
                         resolution.superfamily_name = (a.integrated_ipr_name or a.name).rstrip(".")
+                        if self.cache:
+                            self.cache.set(
+                                "cath_h_ipr",
+                                h_code_numeric,
+                                {
+                                    "integrated_ipr": resolution.integrated_ipr,
+                                    "superfamily_name": resolution.superfamily_name,
+                                },
+                            )
                         pre_resolved = True
                         break
             if not pre_resolved:
                 tasks.append(self._populate_h_level_from_interpro(h_code_numeric, resolution))
-            tasks.append(self._populate_funfams(h_code_numeric, resolution))
+            if include_funfams:
+                tasks.append(self._populate_funfams(h_code_numeric, resolution))
 
-        # 2. Populate T, A, C names concurrently from CATH cathtree
+        # 2. Populate T name from CATH cathtree (and A name only if cached or include_funfams=True)
         async def _set_t() -> None:
             if t_code_numeric:
                 resolution.topology_name = await self._fetch_cathtree_name(t_code_numeric, 3)
 
-        async def _set_a() -> None:
-            if a_code_numeric:
-                resolution.architecture_name = await self._fetch_cathtree_name(a_code_numeric, 2)
-
         tasks.append(_set_t())
-        tasks.append(_set_a())
+        if include_funfams and a_code_numeric:
+            async def _set_a() -> None:
+                resolution.architecture_name = await self._fetch_cathtree_name(a_code_numeric, 2)
+            tasks.append(_set_a())
+
         if tasks:
             await asyncio.gather(*tasks)
 
@@ -149,10 +166,28 @@ class CathClient:
                     ipr_name = ipr_name_obj.get("name") if isinstance(ipr_name_obj, dict) else ipr_name_obj
                     if ipr_name:
                         resolution.superfamily_name = str(ipr_name).rstrip(".")
+                        if self.cache:
+                            self.cache.set(
+                                "cath_h_ipr",
+                                h_code,
+                                {
+                                    "integrated_ipr": resolution.integrated_ipr,
+                                    "superfamily_name": resolution.superfamily_name,
+                                },
+                            )
                         return
 
             if direct_name:
                 resolution.superfamily_name = str(direct_name).rstrip(".")
+            if self.cache and resolution.superfamily_name:
+                self.cache.set(
+                    "cath_h_ipr",
+                    h_code,
+                    {
+                        "integrated_ipr": resolution.integrated_ipr,
+                        "superfamily_name": resolution.superfamily_name,
+                    },
+                )
         except Exception:
             return
 

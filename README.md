@@ -166,41 +166,41 @@ In TED, ~18–20% of structural domains lack an official CATH classification. `t
 
 ---
 
-## Blind Cross-Validation & Ground-Truth Accuracy (20,000 TED Domains)
+## Blind Cross-Validation & Ground-Truth Accuracy (100,000 TED Domains)
 
-Detailed ground-truth validation across **20,000 randomly sampled TED domains** (20 independent batches of 1,000 domains) is documented in [**`docs/ACCURACY_VALIDATION.md`**](docs/ACCURACY_VALIDATION.md) and reproducible via [`scripts/evaluate_accuracy.py`](scripts/evaluate_accuracy.py):
+Detailed ground-truth validation across **100,000 unique TED domains** (100 batches of 1,000 domains / 10 deciles of 10,000 domains) is documented in [**`docs/ACCURACY_VALIDATION.md`**](docs/ACCURACY_VALIDATION.md) and reproducible via [`scripts/benchmark_100000_random.py`](scripts/benchmark_100000_random.py):
 
-### 1. Blind Hold-Out CATH Classification Accuracy ($N = 14,299$ Official CATH Domains)
+### 1. Blind Hold-Out CATH Classification Accuracy ($N = 72,130$ Official CATH Domains)
 
 | Hold-Out Scenario | Class ($C$) | Architecture ($C.A$) | Topology ($C.A.T$) | Superfamily ($C.A.T.H$) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Full Fallback Cascade** *(Mask TED `cath_label`)* | **98.1%** | **95.1%** | **93.8%** | **91.1%** |
-| **`Profile-to-CATH` Bridge (5-Fold CV)** *(Mask TED CATH & `G3DSA`; 85.4% cov)* | **99.0%** | **97.7%** | **96.8%** | **92.2%** |
-| **Pure 3D/SSE Rules Only** *(Zero sequence/profile homology)* | **85.9%** *(95.8% pure $\alpha/\beta$)* | **41.2%** *(marked `T`)* | **24.6%** *(marked `T`)* | — |
+| **Full Fallback Cascade** *(Mask TED `cath_label`)* | **98.2%** | **95.2%** | **93.9%** | **91.1%** |
+| **`Profile-to-CATH` Bridge (5-Fold CV)** *(Mask TED CATH & `G3DSA`; 87.9% cov)* | **99.3%** | **98.6%** | **97.9%** | **92.3%** |
+| **Pure 3D/SSE Rules Only** *(Zero sequence/profile homology)* | **85.6%** *(96.7% pure $\alpha/\beta$)* | **41.5%** *(marked `T`)* | **25.4%** *(marked `T`)* | — |
 
-- **Precision of Direct (Non-`T`-Prefixed) Levels**: **98.1%** for $C$, **98.4%** for $C.A$, **98.2%** for $C.A.T$, and **99.8%** for $C.A.T.H$.
-- **Leave-One-Database-Out Naming Concordance ($N = 6,842$)**: **84.4%** exact InterPro/normalized name concordance and **94.1%** semantic keyword concordance when holding out `Pfam`.
+- **Precision of Direct (Non-`T`-Prefixed) Levels ($N = 72,130$)**: **98.2%** for $C$, **98.6%** for $C.A$, **98.1%** for $C.A.T$, and **99.8%** for $C.A.T.H$.
+- **Leave-One-Database-Out Naming Concordance ($N = 34,648$)**: **90.1%** exact InterPro/normalized name concordance (`31,201 / 34,648`) and **95.7%** semantic keyword concordance (`33,156 / 34,648`) when holding out `Pfam`.
 
 ---
 
-## Large-Scale Benchmark & Out-of-Sample Replication (20,000 TED Domains)
+## Large-Scale Benchmark & Statistical Stability (100,000 TED Domains)
 
-Tested across **20,000 diverse TED domains** (20 independent batches of 1,000 domains each: initial Batches 1–10 and out-of-sample replication Batches 11–20):
+Tested across **100,000 unique TED domains** (100 batches of 1,000 domains / 10 deciles of 10,000 domains across all kingdoms of life):
 
-| Metric | Batches 1–10 (10,000) | Batches 11–20 (10,000 New) | **Combined 20,000 TED Domains** |
-| :--- | :---: | :---: | :---: |
-| **Domain Count** | 10,000 | 10,000 | **20,000** |
-| **Mean Calibrated Confidence Score** | 0.827 | 0.843 | **0.835** *(Tier 1: 0.911, Tier 2: 0.816, Tier 3: 0.428)* |
-| **Tier 1: Specific Domain & Subdomain** | 64.4% | 64.7% | **64.6%** (12,912 / 20,000) |
-| **Tier 2: Superfamily (Curated IPR)** | 23.9% | 26.1% | **25.0%** (4,995 / 20,000) |
-| **Tier 1 + Tier 2 (Domain or Superfamily)** | **88.3%** | **90.8%** | **89.5%** (17,907 / 20,000) |
-| **Tier 3: Protein Family Context** | 11.7% | 8.1% | **9.9%** (1,975 / 20,000) |
-| **Tier 4: Topology / Fold** | 0.03% | 1.15% | **0.59%** (118 / 20,000) |
-| **CATH: Official (4-level)** | 69.8% | 73.2% | **71.5%** |
-| **CATH: TED T-level (`ted_t_plus_*`)** | 11.6% | 10.1% | **10.8%** |
-| **CATH: Profile-to-CATH & Gene3D Overlap** | 8.7% | 6.7% | **7.7%** *(4.4% Profile-to-CATH + 3.3% Gene3D)* |
-| **CATH: Pure 3D/SSE Rules (`C.T...`)** | 9.9% | 10.0% | **10.0%** |
-| **Low pLDDT (< 60)** | 0.9% | 1.1% | **1.0%** |
+| Metric | Range Across 10 Deciles (`10x 10k`) | **Total Across 100,000 TED Domains** |
+| :--- | :---: | :---: |
+| **Domain Count** | 10,000 per decile | **100,000** |
+| **Mean Calibrated Confidence Score** | 0.818 – 0.843 | **0.823** *(Tier 1: 0.899, Tier 2: 0.809, Tier 3: 0.410)* |
+| **Tier 1: Specific Domain & Subdomain** | 61.5% – 64.7% | **62.6%** (62,560 / 100,000; incl. 6,022 subdomains) |
+| **Tier 2: Superfamily (Curated IPR)** | 23.9% – 28.4% | **27.1%** (27,098 / 100,000) |
+| **Tier 1 + Tier 2 (Domain or Superfamily)** | **88.3% – 90.8%** | **89.7%** (89,658 / 100,000) |
+| **Tier 3: Protein Family Context** | 8.1% – 11.7% | **10.2%** (10,160 / 100,000) |
+| **Tier 4: Topology / Fold** | 0.00% – 1.15% | **0.18%** (182 / 100,000) |
+| **CATH: Official (4-level)** | 69.8% – 73.2% | **72.1%** (72,130 / 100,000) |
+| **CATH: TED T-level (`ted_t_plus_*`)** | 8.7% – 11.6% | **9.7%** (9,692 / 100,000) |
+| **CATH: Profile-to-CATH & Gene3D Overlap** | 6.7% – 8.7% | **7.4%** *(4.3% Profile-to-CATH + 3.1% Gene3D)* |
+| **CATH: Pure 3D/SSE Rules (`C.T...`)** | 9.6% – 11.4% | **10.7%** (10,740 / 100,000) |
+| **Low pLDDT (< 60)** | 0.4% – 1.2% | **0.7%** (686 / 100,000) |
 
 Full benchmark reports and datasets are available in the [`examples/`](examples/) directory.
 

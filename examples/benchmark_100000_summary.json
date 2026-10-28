@@ -1,0 +1,301 @@
+{
+  "overall_100k_stats": {
+    "count": 100000,
+    "mean_confidence": 0.8234,
+    "mean_conf_by_tier": {
+      "superfamily": 0.8086,
+      "specific_domain": 0.8986,
+      "protein_family_context": 0.41,
+      "topology_fold": 0.2349
+    },
+    "tier_specific_domain": 0.6256,
+    "tier_superfamily": 0.27098,
+    "tier_specific_or_superfamily": 0.89658,
+    "tier_family_context": 0.1016,
+    "tier_topology_fold": 0.00182,
+    "cath_official": 0.7213,
+    "cath_t_level": 0.09692,
+    "cath_profile_map": 0.0432,
+    "cath_g3dsa": 0.03118,
+    "cath_direct_3d_rules": 0.1074,
+    "conf_below_50_pct": 0.10623,
+    "low_plddt_pct": 0.00686,
+    "sublobe_count": 6022
+  },
+  "deciles_10k": {
+    "Decile_1_1_to_10000": {
+      "count": 10000,
+      "mean_confidence": 0.8275,
+      "mean_conf_by_tier": {
+        "superfamily": 0.8167,
+        "specific_domain": 0.9047,
+        "protein_family_context": 0.4256,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.6441,
+      "tier_superfamily": 0.2387,
+      "tier_specific_or_superfamily": 0.8828,
+      "tier_family_context": 0.1169,
+      "tier_topology_fold": 0.0003,
+      "cath_official": 0.6979,
+      "cath_t_level": 0.1155,
+      "cath_profile_map": 0.0554,
+      "cath_g3dsa": 0.0318,
+      "cath_direct_3d_rules": 0.0994,
+      "conf_below_50_pct": 0.1123,
+      "low_plddt_pct": 0.0092,
+      "sublobe_count": 430
+    },
+    "Decile_2_10001_to_20000": {
+      "count": 10000,
+      "mean_confidence": 0.8431,
+      "mean_conf_by_tier": {
+        "specific_domain": 0.9165,
+        "protein_family_context": 0.4316,
+        "superfamily": 0.815,
+        "topology_fold": 0.2348
+      },
+      "tier_specific_domain": 0.6471,
+      "tier_superfamily": 0.2608,
+      "tier_specific_or_superfamily": 0.9079,
+      "tier_family_context": 0.0806,
+      "tier_topology_fold": 0.0115,
+      "cath_official": 0.732,
+      "cath_t_level": 0.1012,
+      "cath_profile_map": 0.0317,
+      "cath_g3dsa": 0.0348,
+      "cath_direct_3d_rules": 0.1003,
+      "conf_below_50_pct": 0.0857,
+      "low_plddt_pct": 0.0111,
+      "sublobe_count": 457
+    },
+    "Decile_3_20001_to_30000": {
+      "count": 10000,
+      "mean_confidence": 0.8248,
+      "mean_conf_by_tier": {
+        "specific_domain": 0.908,
+        "protein_family_context": 0.4061,
+        "superfamily": 0.8085,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.6208,
+      "tier_superfamily": 0.2682,
+      "tier_specific_or_superfamily": 0.889,
+      "tier_family_context": 0.1063,
+      "tier_topology_fold": 0.0047,
+      "cath_official": 0.7052,
+      "cath_t_level": 0.1129,
+      "cath_profile_map": 0.0489,
+      "cath_g3dsa": 0.0374,
+      "cath_direct_3d_rules": 0.0956,
+      "conf_below_50_pct": 0.1157,
+      "low_plddt_pct": 0.0116,
+      "sublobe_count": 632
+    },
+    "Decile_4_30001_to_40000": {
+      "count": 10000,
+      "mean_confidence": 0.8212,
+      "mean_conf_by_tier": {
+        "specific_domain": 0.8945,
+        "protein_family_context": 0.4062,
+        "superfamily": 0.8069,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.6292,
+      "tier_superfamily": 0.2691,
+      "tier_specific_or_superfamily": 0.8983,
+      "tier_family_context": 0.1014,
+      "tier_topology_fold": 0.0003,
+      "cath_official": 0.7282,
+      "cath_t_level": 0.0897,
+      "cath_profile_map": 0.0423,
+      "cath_g3dsa": 0.0283,
+      "cath_direct_3d_rules": 0.1115,
+      "conf_below_50_pct": 0.106,
+      "low_plddt_pct": 0.0056,
+      "sublobe_count": 655
+    },
+    "Decile_5_40001_to_50000": {
+      "count": 10000,
+      "mean_confidence": 0.8203,
+      "mean_conf_by_tier": {
+        "specific_domain": 0.8952,
+        "superfamily": 0.8068,
+        "protein_family_context": 0.4069,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.6231,
+      "tier_superfamily": 0.2729,
+      "tier_specific_or_superfamily": 0.896,
+      "tier_family_context": 0.1038,
+      "tier_topology_fold": 0.0002,
+      "cath_official": 0.7205,
+      "cath_t_level": 0.0968,
+      "cath_profile_map": 0.0402,
+      "cath_g3dsa": 0.0281,
+      "cath_direct_3d_rules": 0.1144,
+      "conf_below_50_pct": 0.1091,
+      "low_plddt_pct": 0.0048,
+      "sublobe_count": 629
+    },
+    "Decile_6_50001_to_60000": {
+      "count": 10000,
+      "mean_confidence": 0.8191,
+      "mean_conf_by_tier": {
+        "specific_domain": 0.8906,
+        "superfamily": 0.8047,
+        "protein_family_context": 0.4045,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.6226,
+      "tier_superfamily": 0.2799,
+      "tier_specific_or_superfamily": 0.9025,
+      "tier_family_context": 0.097,
+      "tier_topology_fold": 0.0005,
+      "cath_official": 0.7209,
+      "cath_t_level": 0.0891,
+      "cath_profile_map": 0.0454,
+      "cath_g3dsa": 0.0303,
+      "cath_direct_3d_rules": 0.1143,
+      "conf_below_50_pct": 0.104,
+      "low_plddt_pct": 0.0041,
+      "sublobe_count": 686
+    },
+    "Decile_7_60001_to_70000": {
+      "count": 10000,
+      "mean_confidence": 0.8195,
+      "mean_conf_by_tier": {
+        "specific_domain": 0.8955,
+        "superfamily": 0.8064,
+        "protein_family_context": 0.4048,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.6148,
+      "tier_superfamily": 0.2815,
+      "tier_specific_or_superfamily": 0.8963,
+      "tier_family_context": 0.1036,
+      "tier_topology_fold": 0.0001,
+      "cath_official": 0.7319,
+      "cath_t_level": 0.0887,
+      "cath_profile_map": 0.0438,
+      "cath_g3dsa": 0.0302,
+      "cath_direct_3d_rules": 0.1054,
+      "conf_below_50_pct": 0.1097,
+      "low_plddt_pct": 0.0065,
+      "sublobe_count": 631
+    },
+    "Decile_8_70001_to_80000": {
+      "count": 10000,
+      "mean_confidence": 0.8188,
+      "mean_conf_by_tier": {
+        "specific_domain": 0.893,
+        "superfamily": 0.8066,
+        "protein_family_context": 0.4041,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.6149,
+      "tier_superfamily": 0.2835,
+      "tier_specific_or_superfamily": 0.8984,
+      "tier_family_context": 0.1013,
+      "tier_topology_fold": 0.0003,
+      "cath_official": 0.725,
+      "cath_t_level": 0.0932,
+      "cath_profile_map": 0.0442,
+      "cath_g3dsa": 0.0277,
+      "cath_direct_3d_rules": 0.1099,
+      "conf_below_50_pct": 0.1061,
+      "low_plddt_pct": 0.005,
+      "sublobe_count": 663
+    },
+    "Decile_9_80001_to_90000": {
+      "count": 10000,
+      "mean_confidence": 0.822,
+      "mean_conf_by_tier": {
+        "superfamily": 0.8084,
+        "specific_domain": 0.8949,
+        "protein_family_context": 0.4051,
+        "topology_fold": 0.235
+      },
+      "tier_specific_domain": 0.62,
+      "tier_superfamily": 0.281,
+      "tier_specific_or_superfamily": 0.901,
+      "tier_family_context": 0.0987,
+      "tier_topology_fold": 0.0003,
+      "cath_official": 0.7321,
+      "cath_t_level": 0.0868,
+      "cath_profile_map": 0.0413,
+      "cath_g3dsa": 0.0307,
+      "cath_direct_3d_rules": 0.1091,
+      "conf_below_50_pct": 0.1041,
+      "low_plddt_pct": 0.0051,
+      "sublobe_count": 603
+    },
+    "Decile_10_90001_to_100000": {
+      "count": 10000,
+      "mean_confidence": 0.8175,
+      "mean_conf_by_tier": {
+        "superfamily": 0.8075,
+        "specific_domain": 0.8925,
+        "protein_family_context": 0.4072
+      },
+      "tier_specific_domain": 0.6194,
+      "tier_superfamily": 0.2742,
+      "tier_specific_or_superfamily": 0.8936,
+      "tier_family_context": 0.1064,
+      "tier_topology_fold": 0.0,
+      "cath_official": 0.7193,
+      "cath_t_level": 0.0953,
+      "cath_profile_map": 0.0388,
+      "cath_g3dsa": 0.0325,
+      "cath_direct_3d_rules": 0.1141,
+      "conf_below_50_pct": 0.1096,
+      "low_plddt_pct": 0.0056,
+      "sublobe_count": 636
+    }
+  },
+  "cath_holdout_validation": {
+    "n_official": 72130,
+    "cascade_a_full": {
+      "c_acc": 0.98155,
+      "ca_acc": 0.95223,
+      "cat_acc": 0.9394,
+      "cath_acc": 0.91099,
+      "direct_level_precision": {
+        "1": 0.98155,
+        "2": 0.9857,
+        "3": 0.9807,
+        "4": 0.99777
+      },
+      "direct_level_counts": {
+        "1": 72130,
+        "2": 67115,
+        "3": 67110,
+        "4": 48913
+      }
+    },
+    "cascade_b_no_g3dsa": {
+      "c_acc": 0.96989,
+      "ca_acc": 0.90354,
+      "cat_acc": 0.87726,
+      "cath_acc": 0.81327,
+      "profile_map_coverage": 0.8794,
+      "profile_map_c_acc": 0.99276,
+      "profile_map_ca_acc": 0.98633,
+      "profile_map_cat_acc": 0.97935,
+      "profile_map_cath_acc": 0.92294
+    },
+    "cascade_c_pure_3d_sse": {
+      "c_acc": 0.85623,
+      "pure_alpha_or_beta_c_acc": 0.96658,
+      "ca_acc": 0.41452,
+      "cat_acc": 0.25429
+    }
+  },
+  "naming_validation": {
+    "lodo_n": 34648,
+    "lodo_exact_concordance": 0.90051,
+    "lodo_semantic_concordance": 0.95694,
+    "legacy_pdb_noise_count": 2,
+    "legacy_pdb_noise_pct": 2e-05
+  }
+}
