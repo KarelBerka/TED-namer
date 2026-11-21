@@ -92,6 +92,7 @@ class TedClient:
                     cath_label=str(item.get("cath_label") or "-"),
                     cath_assignment_level=str(item.get("cath_assignment_level") or "-"),
                     cath_assignment_method=str(item.get("cath_assignment_method") or "-"),
+                    consensus_level=item.get("consensus_level"),
                     packing_density=item.get("packing_density"),
                     norm_rg=item.get("norm_rg"),
                     tax_common_name=item.get("tax_common_name"),

@@ -1,4 +1,4 @@
-"""Rule-based and 3D-geometric CATH classification engine with 'T'-prefixed estimated levels."""
+"""Rule-based and 3D-geometric CATH classification engine with strict hierarchical '?' wildcards."""
 
 from __future__ import annotations
 
@@ -13,6 +13,30 @@ from ted_namer.models import OverlappingAnnotation, TedDomainMember
 
 _G3DSA_RE = re.compile(r"^(?:G3DSA:)?(\d+)\.(\d+)\.(\d+)\.(\d+)$", re.IGNORECASE)
 _PROFILE_CATH_MAP: dict[str, tuple[list[str], int]] | None = None
+
+# Curated superfamily names for unintegrated CATH-Gene3D H-level codes whose raw titles are legacy PDB headers
+CURATED_UNINTEGRATED_CATH_H_NAMES: dict[str, str] = {
+    "3.30.200.20": "Protein kinase-like N-terminal lobe superfamily",
+    "1.10.510.10": "Protein kinase-like C-terminal catalytic lobe superfamily",
+    "1.10.420.10": "Haem peroxidase superfamily",
+    "3.40.228.10": "Molybdopterin oxidoreductase superfamily",
+    "1.10.486.10": "UvrD/REP-type DNA helicase C-terminal superfamily",
+    "1.20.140.10": "Acyl-CoA dehydrogenase C-terminal alpha-helical superfamily",
+    "3.40.50.10490": "Phosphoglucose isomerase-like superfamily",
+    "3.40.120.10": "Phosphohexomutase catalytic superfamily",
+    "3.30.540.10": "Inositol monophosphatase / Fructose-1,6-bisphosphatase superfamily",
+    "3.90.105.10": "Molybdopterin biosynthesis MoeA-like superfamily",
+    "3.30.9.10": "FAD-dependent oxidoreductase substrate-binding superfamily",
+    "3.30.870.10": "Restriction endonuclease-like superfamily",
+    "3.30.1640.10": "MCM N-terminal DNA-binding superfamily",
+    "2.10.50.10": "TNFR/NGFR cysteine-rich repeat superfamily",
+    "3.40.50.150": "S-adenosyl-L-methionine-dependent methyltransferase superfamily",
+    "2.60.40.10": "Immunoglobulin-like beta-sandwich superfamily",
+    "3.40.50.720": "NAD(P)-binding Rossmann-like domain superfamily",
+    "3.40.50.300": "P-loop containing nucleoside triphosphate hydrolase superfamily",
+    "1.10.490.10": "Globin-like superfamily",
+    "3.30.70.100": "Ferredoxin-like / RNA-binding domain superfamily",
+}
 
 
 def _get_profile_cath_map() -> dict[str, tuple[list[str], int]]:
@@ -171,35 +195,60 @@ def extract_3d_sse_segments(coords: list[Vec3]) -> tuple[list[SseSegment3D], lis
 
 
 def strip_t_prefixes(cath_code: str) -> str:
-    """Convert a 'T'-prefixed CATH code (e.g. '3.T40.T50.T10') into a numeric CATH code ('3.40.50.10')."""
+    """Convert a '?' wildcard or legacy 'T'-prefixed CATH code into its confirmed numeric prefix/code.
+
+    Examples:
+        '2.60.40.?' -> '2.60.40'
+        '3.?.?.?' -> '3'
+        '3.T40.T50.T10' -> '3.40.50.10'
+    """
     if not cath_code or cath_code == "-":
         return "-"
     primary = cath_code.split(",")[0].strip()
-    parts = [p.lstrip("Tt").strip() for p in primary.split(".") if p.strip()]
-    return ".".join(p for p in parts if p)
+    parts: list[str] = []
+    for raw_part in primary.split("."):
+        cleaned = raw_part.strip()
+        if not cleaned or cleaned == "?":
+            continue
+        cleaned = cleaned.lstrip("Tt").strip()
+        if cleaned:
+            parts.append(cleaned)
+    return ".".join(parts) if parts else "-"
 
 
 def is_estimated_cath_code(cath_code: str) -> bool:
-    """Return True if any level of the CATH code carries the 'T' estimation prefix."""
+    """Return True if any level of the CATH code is unconfirmed ('?' wildcard or legacy 'T' prefix)."""
     if not cath_code or cath_code == "-":
         return False
     primary = cath_code.split(",")[0].strip()
-    return any(p.strip().upper().startswith("T") for p in primary.split("."))
+    return any(
+        p.strip() == "?" or p.strip().upper().startswith("T")
+        for p in primary.split(".")
+        if p.strip()
+    )
 
 
 def format_t_prefixed_cath(
     full_numeric_parts: list[str],
     known_depth: int = 1,
 ) -> str:
-    """Format a 4-part CATH code where levels up to `known_depth` are direct numbers and deeper levels have 'T'."""
+    """Format a 4-part CATH code where levels < `known_depth` are confirmed integers and deeper levels are '?'."""
     formatted: list[str] = []
     for idx, part in enumerate(full_numeric_parts):
         clean_num = part.lstrip("Tt").strip()
         if idx < known_depth:
             formatted.append(clean_num)
         else:
-            formatted.append(f"T{clean_num}")
+            formatted.append("?")
     return ".".join(formatted)
+
+
+format_hierarchical_cath = format_t_prefixed_cath
+
+
+def is_novel_fold_source(est_source: Optional[str]) -> bool:
+    """Return True if classification relies solely on pure 3D/SSE rules (novel fold candidate per CATH v4.4)."""
+    return bool(est_source and est_source.startswith("rule_"))
 
 
 def classify_cath_with_rules(
@@ -372,7 +421,7 @@ def infer_cath_classification(
 
     Levels with >90% empirical accuracy (official TED assignment, high-IoU G3DSA match,
     high-purity profile->CATH bridge, or direct Class C from SSEs) are written as plain numbers;
-    remaining estimated levels are prefixed with 'T'.
+    unconfirmed deeper levels use '?' wildcards (while full 4-part numeric code is returned as fold hint).
     """
     raw_ted = (member.cath_label or "-").split(",")[0].strip()
     ted_parts = [p.strip() for p in raw_ted.split(".") if p.strip() and p.strip() != "-"]

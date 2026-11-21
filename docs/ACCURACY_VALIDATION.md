@@ -1,12 +1,12 @@
-# Accuracy & Cross-Validation Benchmark (`ted-namer` — 100,000 TED Domains)
+# Accuracy, Literature Validity & Cross-Validation Benchmark (`ted-namer` — 100,000 TED Domains)
 
-This document reports the ground-truth accuracy and decile-by-decile statistical stability of `ted-namer` evaluated across **100,000 unique TED structural domains** (100 batches of 1,000 domains / 10 deciles of 10,000 domains across all kingdoms of life), reproducible via [`scripts/benchmark_100000_random.py`](../scripts/benchmark_100000_random.py).
+This document reports the ground-truth classification accuracy, naming hygiene audit, and decile-by-decile statistical stability of `ted-namer` evaluated across **100,000 unique TED structural domains** (100 batches of 1,000 domains / 10 deciles of 10,000 domains across all kingdoms of life), reproducible via [`scripts/benchmark_100000_random.py`](../scripts/benchmark_100000_random.py) and [`scripts/reevaluate_100k.py`](../scripts/reevaluate_100k.py).
 
 ---
 
 ## 1. Blind Hold-Out CATH Classification Accuracy ($N = 72,130$)
 
-To measure true predictive accuracy rather than internal confidence heuristics, we took all **72,130 domains** in our 100,000-domain benchmark that possess an official 4-level TED CATH assignment (`ted_official`), masked out their official CATH label (`cath_label = "-"`), and evaluated three progressively stricter hold-out scenarios:
+To measure true predictive accuracy against experimental/Foldseek structural assignments, we took all **72,130 domains** in our 100,000-domain benchmark that carry an official 4-level TED CATH assignment (`ted_official`), masked out their official CATH label (`cath_label = "-"`), and evaluated three progressively stricter hold-out scenarios:
 
 | Validation Scenario ($N = 72,130$) | Class ($C$) Accuracy | Architecture ($C.A$) Accuracy | Topology ($C.A.T$) Accuracy | Superfamily ($C.A.T.H$) Accuracy |
 | :--- | :---: | :---: | :---: | :---: |
@@ -15,64 +15,77 @@ To measure true predictive accuracy rather than internal confidence heuristics, 
 | **Scenario B1: `Profile-to-CATH` Bridge Alone**<br>*(5-fold out-of-sample Pfam/SUPERFAMILY/CDD/IPR $\to$ CATH, covering 87.9% of domains)* | **99.3%** (`99.28%`) | **98.6%** (`98.63%`) | **97.9%** (`97.94%`) | **92.3%** (`92.29%`) |
 | **Scenario C: Pure 3D/SSE Rules Only**<br>*(Mask all sequence/profile annotations; geometry & SSE counts only)* | **85.6%**<br>*(96.7% pure $\alpha/\beta$)* | **41.5%** | **25.4%** | — |
 
-### Precision of Non-`T`-Prefixed (Direct) CATH Levels ($N = 72,130$)
+### Precision of Confirmed Direct (Non-Wildcard `?`-Free) CATH Levels ($N = 72,130$)
 
-In `ted-namer`, a CATH level is written as a plain number only when its empirical precision exceeds **90%**; otherwise it carries the `T` estimation prefix (e.g., `3.T40.T50.T10`). Across the 72,130 held-out official CATH domains in Scenario A:
+Aligned with TED (*Lau et al., Science 2024*) and CATH v4.4 (*Waman et al., NAR 2025*), `ted-namer` avoids conflating computational estimates with CATH's `T`-level (Topology) code. A hierarchy level is emitted as a confirmed integer **only when empirical out-of-sample precision exceeds 90%**; deeper unconfirmed levels use explicit **`?` wildcards** (e.g., `2.60.40.?` or `3.?.?.?`), while numeric estimates are preserved separately in `cath_fold_hint` alongside `novel_fold_candidate = True`:
 
-| CATH Level Emitted Without `T` Prefix | Claimed Count (out of 72,130) | Empirical Precision |
+| CATH Level Emitted as Confirmed Integer (Non-`?`) | Claimed Count (out of 72,130) | Empirical Precision |
 | :--- | :---: | :---: |
 | **Level 1: Class ($C$)** | 72,130 (100.0%) | **98.16%** |
 | **Level 2: Architecture ($C.A$)** | 67,115 (93.0%) | **98.57%** |
 | **Level 3: Topology ($C.A.T$)** | 67,110 (93.0%) | **98.07%** |
 | **Level 4: Homologous Superfamily ($C.A.T.H$)** | 48,913 (67.8%) | **99.78%** |
 
-> **Key Takeaway**: Because pure 3D/SSE geometric rules without sequence homology achieve **85.6%** accuracy on Class $C$ (and **96.7%** on pure $\alpha$ or pure $\beta$ domains) but only **41.5%** on Architecture ($C.A$) and **25.4%** on Topology ($C.A.T$), pure 3D/SSE predictions strictly emit only Class $C$ as a plain number and prefix estimated Architecture, Topology, and Superfamily levels with `T` (e.g., `3.T40.T50.T10`).
+> **Key Takeaway**: Across all 100,000 domains, `72,130` (`72.1%`) have full 4-level official CATH codes, `17,130` (`17.1%`) are mapped via partial TED `T`-level (`9,692`), `Profile-to-CATH` (`4,320`), or `G3DSA` (`3,118`), and `10,740` (`10.74%`) lack homology and are explicitly flagged as `novel_fold_candidate = True` with `?` wildcard notation (`C.?.?.?`).
 
 ---
 
-## 2. Statistical Stability Across 10 Deciles of 10,000 Domains ($N = 100,000$)
+## 2. Before vs. After Literature & Naming Hygiene Audit ($N = 100,000$)
 
-To verify statistical convergence and absence of drift or overfitting, the 100,000 TED domains were evaluated across **10 consecutive deciles of 10,000 unique domains each**:
+Comparing the refreshed 100,000-domain outputs against the pre-audit pipeline highlights the exact impact of enforcing InterPro `annotation_type` rules, curated unintegrated CATH H-overrides, naming sanitization, and strict `?` wildcard notation:
 
-| Decile (10,000 Domains Each) | Mean Conf | Tier 1: Domain | Tier 2: Superfamily | **Tier 1 + Tier 2** | Tier 3: Family Context | Tier 4: Fold | CATH Official | Multi-Lobe Subdomains |
+| Validity / Hygiene Criterion (across 100,000 Domains) | Before Audit | After Audit & Upgrade | Change / Resolution |
+| :--- | :---: | :---: | :--- |
+| **Maturing `T`-prefix collisions with CATH `T`-level** | `26,187` (26.2%) | **`0` (0.0%)** | Replaced 100% with hierarchical `?` wildcards (`26,187`) + `cath_fold_hint` + `novel_fold_candidate` (`10,740`). |
+| **Bare positional names (`N-terminal domain`, `NTD domain`)** | `149` | **`0` (0.0%)** | **100% eliminated** — enriched with parent protein/family context (e.g. `argonaute N-terminal domain`). |
+| **Bracketed gene / EC tags (`[bioU]`, etc.)** | `703` | **`0` (0.0%)** | **100% eliminated** by tag stripping. |
+| **Adjacent double-domain suffixes (`domain-like domain`)** | `8` | **`0` (0.0%)** | **100% eliminated** by suffix deduplication. |
+| **Top legacy PDB titles (`Phosphorylase Kinase domain 1`, `Transferase(Phosphotransferase) domain 1`)** | `2,146` (`1,152 + 994`) | **`0` (0.0%)** | **100% eliminated** via curated unintegrated H-names & removing inflated `cath_h` boost. |
+| **Strict legacy PDB noise (`; domain \d+`, `Chain`, `Vaccinia`)** | — | **`36` (0.036%)** | **99.96% clean** across 100,000 domains. |
+| **Sentence-like descriptions / verbose >90-char names** | `2,454` / `2,230` | **`82` / `65`** | **96.7% / 97.1% reduction** by preferring concise InterPro/short titles + `0.40x` penalty. |
+
+---
+
+## 3. Statistical Stability Across 10 Deciles of 10,000 Domains ($N = 100,000$)
+
+Evaluated across **10 consecutive deciles of 10,000 unique TED domains each** under the strict updated rules:
+
+| Decile (10,000 Domains Each) | Mean Conf | Tier 1: Domain | Tier 2: Superfamily | **Tier 1 + Tier 2** | Tier 3: Family Context | Tier 4 / 5: Fold / Unchar | CATH Official | Multi-Lobe Subdomains |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **D1 (`1–10k`)** | 0.828 | 64.41% | 23.87% | **88.28%** | 11.69% | 0.03% | 69.79% | 430 |
-| **D2 (`10k–20k`)** | 0.843 | 64.71% | 26.08% | **90.79%** | 8.06% | 1.15% | 73.20% | 457 |
-| **D3 (`20k–30k`)** | 0.825 | 62.08% | 26.82% | **88.90%** | 10.63% | 0.47% | 70.52% | 632 |
-| **D4 (`30k–40k`)** | 0.821 | 62.92% | 26.91% | **89.83%** | 10.14% | 0.03% | 72.82% | 655 |
-| **D5 (`40k–50k`)** | 0.820 | 62.31% | 27.29% | **89.60%** | 10.38% | 0.02% | 72.05% | 629 |
-| **D6 (`50k–60k`)** | 0.819 | 62.26% | 27.99% | **90.25%** | 9.70% | 0.05% | 72.09% | 686 |
-| **D7 (`60k–70k`)** | 0.820 | 61.48% | 28.15% | **89.63%** | 10.36% | 0.01% | 73.19% | 631 |
-| **D8 (`70k–80k`)** | 0.819 | 61.49% | 28.35% | **89.84%** | 10.13% | 0.03% | 72.50% | 663 |
-| **D9 (`80k–90k`)** | 0.822 | 62.00% | 28.10% | **90.10%** | 9.87% | 0.03% | 73.21% | 603 |
-| **D10 (`90k–100k`)** | 0.818 | 61.94% | 27.42% | **89.36%** | 10.64% | 0.00% | 71.93% | 636 |
-| **TOTAL (`100,000`)** | **0.823** | **62.56%** | **27.10%** | **89.66%** | **10.16%** | **0.18%** | **72.13%** | **6,022** |
+| **D1 (`1–10k`)** | 0.800 | 62.55% | 23.11% | **85.66%** | 14.32% | 0.02% | 69.79% | 423 |
+| **D2 (`10k–20k`)** | 0.813 | 63.15% | 24.95% | **88.10%** | 10.75% | 1.15% | 73.20% | 478 |
+| **D3 (`20k–30k`)** | 0.794 | 63.11% | 23.90% | **87.01%** | 12.52% | 0.47% | 70.52% | 640 |
+| **D4 (`30k–40k`)** | 0.792 | 62.64% | 24.50% | **87.14%** | 12.83% | 0.03% | 72.82% | 639 |
+| **D5 (`40k–50k`)** | 0.790 | 62.00% | 24.98% | **86.98%** | 13.00% | 0.02% | 72.05% | 603 |
+| **D6 (`50k–60k`)** | 0.787 | 62.00% | 24.99% | **86.99%** | 12.97% | 0.04% | 72.09% | 667 |
+| **D7 (`60k–70k`)** | 0.787 | 61.45% | 25.16% | **86.61%** | 13.38% | 0.01% | 73.19% | 601 |
+| **D8 (`70k–80k`)** | 0.788 | 61.09% | 25.54% | **86.63%** | 13.35% | 0.02% | 72.50% | 651 |
+| **D9 (`80k–90k`)** | 0.792 | 62.02% | 24.90% | **86.92%** | 13.05% | 0.03% | 73.21% | 578 |
+| **D10 (`90k–100k`)** | 0.786 | 61.39% | 24.89% | **86.28%** | 13.72% | 0.00% | 71.93% | 621 |
+| **TOTAL (`100,000`)** | **0.793** | **62.14%** | **24.69%** | **86.83%** | **12.99%** | **0.18%** | **72.13%** | **5,901** |
 
 ---
 
-## 3. Domain Naming Accuracy & Cross-Database Validation ($N = 100,000$)
+## 4. Leave-One-Database-Out Cross-Validation & Structural Quality Flags ($N = 100,000$)
 
-### A. Leave-One-Database-Out Cross-Validation ($N = 34,648$)
-For all **34,648 domains** across the 100,000-domain dataset where `Pfam` contributed to a Tier 1 (`specific_domain`) assignment alongside at least one other domain database (`CDD`, `SMART`, `PROSITE`, `InterPro`), we masked out `Pfam` completely and tested whether the remaining databases independently recovered the same domain designation:
+### A. Leave-One-Database-Out Cross-Validation ($N = 36,511$)
+For all **36,511 domains** across the 100,000-domain dataset where `Pfam` contributed to a Tier 1 (`specific_domain`) assignment alongside at least one other domain database (`CDD`, `SMART`, `InterPro`, etc.), masking out `Pfam` completely yielded:
+- **Exact InterPro ID / Normalized Name Concordance**: **91.06%** (`33,247 / 36,511`) — *up from 90.05% before hygiene fixes!*
+- **Semantic / Functional Keyword Concordance**: **96.39%** (`35,192 / 36,511`)
 
-- **Exact InterPro ID / Normalized Name Concordance**: **90.05%** (`31,201 / 34,648`)
-- **Semantic / Functional Keyword Concordance**: **95.69%** (`33,156 / 34,648`)
+### B. Structural Quality Flags (Decoupled from Naming Confidence)
+| `structure_quality_flags` | Domain Count across 100,000 | Share |
+| :--- | :---: | :---: |
+| **`ok`** (pLDDT $\ge 70$, globular `norm_rg` $\le 0.50$) | `96,190` | **96.19%** |
+| **`low_plddt`** (`plddt < 70` or member `< 60`) | `2,078` | **2.08%** |
+| **`non_globular`** (`norm_rg > 0.50`) | `1,850` | **1.85%** |
 
-### B. Elimination of Legacy PDB-Header Naming Artifacts
-By always prioritizing the curated integrated InterPro superfamily name (`integrated_ipr`) over raw `G3DSA` headers and stripping PDB chain/domain suffixes:
-- Legacy PDB-header artifacts across all 100,000 domains were restricted to **2 / 100,000 (`0.002%`)** (**>99.9% reduction**).
-
-### C. Resolution of Multi-Lobe Functional Domains
-- With subdomain lobe detection ($\text{Cov}_{\text{TED}} \ge 0.80$, $0.20 \le \text{Cov}_{\text{Annot}} < 0.50$), **6,022 multi-lobe domains** (`6.02%` of all 100,000 TED domains) are accurately named with their positional subdomain identity (`N-terminal`, `central`, or `C-terminal subdomain`).
-
----
-
-## 4. Calibrated Confidence Score Distribution ($N = 100,000$)
-
+### C. Calibrated Confidence Score Distribution ($N = 100,000$)
 | Specificity Tier | Share of 100,000 Domains | Mean Calibrated Confidence |
 | :--- | :---: | :---: |
-| **Tier 1: `specific_domain`** | **62.56%** (62,560) | **0.899** |
-| **Tier 2: `superfamily`** | **27.10%** (27,098) | **0.809** |
-| **Tier 3: `protein_family_context`** | **10.16%** (10,160) | **0.410** |
-| **Tier 4: `topology_fold`** | **0.18%** (182) | **0.235** |
-| **Overall (100,000 TED Domains)** | **100.00%** | **0.823** |
+| **Tier 1: `specific_domain`** (incl. 5,901 multi-lobe subdomains) | **62.14%** (62,140) | **0.884** |
+| **Tier 2: `superfamily`** (Curated Integrated IPR + H-overrides) | **24.69%** (24,692) | **0.765** |
+| **Tier 3: `protein_family_context`** (Family + positional context) | **12.99%** (12,989) | **0.420** |
+| **Tier 4: `topology_fold`** (Confirmed-`T` CATH Topology fallback) | **0.07%** (69) | **0.203** |
+| **Tier 5: `novel_uncharacterized`** | **0.11%** (110) | **0.151** |
+| **Overall (100,000 TED Domains)** | **100.00%** | **0.793** |

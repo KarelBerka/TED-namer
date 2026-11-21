@@ -35,6 +35,9 @@ def to_delimited(results: list[ClusterNamingResult], delimiter: str = "\t") -> s
             "supporting_accessions",
             "member_ted_ids",
             "rationale",
+            "cath_fold_hint",
+            "novel_fold_candidate",
+            "structure_quality_flags",
         ]
     )
     for r in results:
@@ -43,6 +46,7 @@ def to_delimited(results: list[ClusterNamingResult], delimiter: str = "\t") -> s
         accs = ",".join(top.supporting_accessions[:5]) if top else ""
         topo_name = r.cath_summary.topology_name if r.cath_summary and r.cath_summary.topology_name else ""
         member_ids = ",".join(m.domain.ted_id for m in r.members[:20])
+        qual_flags = ",".join(r.structure_quality_flags) if r.structure_quality_flags else "ok"
         writer.writerow(
             [
                 r.cluster_id,
@@ -58,6 +62,9 @@ def to_delimited(results: list[ClusterNamingResult], delimiter: str = "\t") -> s
                 accs,
                 member_ids,
                 r.rationale,
+                r.cath_fold_hint or "",
+                "true" if r.novel_fold_candidate else "false",
+                qual_flags,
             ]
         )
     return buf.getvalue()
@@ -86,12 +93,15 @@ def to_markdown_report(results: list[ClusterNamingResult]) -> str:
                 f"- **Confidence Score**: `{r.confidence_score:.3f}` (`{r.naming_method}`)",
                 f"- **Specificity Tier**: `{r.specificity_tier.value}`",
                 f"- **Dominant CATH Classification**: `{r.dominant_cath_label}`"
+                + (f" (fold hint: `{r.cath_fold_hint}`)" if r.cath_fold_hint else "")
                 + (
                     f" — Superfamily: *{r.cath_summary.superfamily_name or 'N/A'}*, "
                     f"Topology: *{r.cath_summary.topology_name or 'N/A'}*"
                     if r.cath_summary
                     else ""
                 ),
+                f"- **Novel Fold Candidate**: `{'yes' if r.novel_fold_candidate else 'no'}`",
+                f"- **Structure Quality**: `{', '.join(r.structure_quality_flags) if r.structure_quality_flags else 'ok'}`",
                 f"- **Consensus Relative Position**: `{r.consensus_relative_position}`",
                 f"- **Rationale**: {r.rationale}",
                 "",

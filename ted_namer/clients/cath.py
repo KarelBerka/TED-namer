@@ -8,10 +8,15 @@ from typing import Optional
 import httpx
 
 from ted_namer.cache import ApiCache
-from ted_namer.cath_classifier import is_estimated_cath_code, strip_t_prefixes
+from ted_namer.cath_classifier import (
+    CURATED_UNINTEGRATED_CATH_H_NAMES,
+    is_estimated_cath_code,
+    strip_t_prefixes,
+)
 from ted_namer.models import CathResolution, OverlappingAnnotation
 
-CATH_API_BASE = "https://www.cathdb.info/version/v4_3_0/api/rest"
+CATH_API_BASE = "https://www.cathdb.info/version/v4_4_0/api/rest"
+CATH_API_FALLBACK_BASE = "https://www.cathdb.info/version/v4_3_0/api/rest"
 INTERPRO_API_BASE = "https://www.ebi.ac.uk/interpro/api"
 
 _CATH_CLASS_NAMES = {
@@ -19,11 +24,12 @@ _CATH_CLASS_NAMES = {
     "2": "Mainly Beta",
     "3": "Alpha Beta",
     "4": "Few Secondary Structures",
+    "6": "Special",
 }
 
 
 class CathClient:
-    """Resolves CATH codes (both official '2.60.40.720' and T-estimated '3.T40.T50.T10') via InterPro and CATH APIs."""
+    """Resolves CATH codes (e.g. '2.60.40.720', '2.60.40.?', '3.?.?.?') via CATH v4.4 and InterPro APIs."""
 
     def __init__(self, http_client: httpx.AsyncClient, cache: Optional[ApiCache] = None) -> None:
         self.http = http_client
@@ -36,63 +42,92 @@ class CathClient:
         estimation_source: str = "ted_official",
         overlapping_annotations: Optional[list[OverlappingAnnotation]] = None,
         include_funfams: bool = False,
+        fold_hint: Optional[str] = None,
+        novel_fold_candidate: bool = False,
     ) -> Optional[CathResolution]:
-        """Resolve a CATH code (official or 'T'-prefixed estimate) to its hierarchy of names."""
+        """Resolve a CATH code (official or '?' wildcard estimate) to its hierarchy of names."""
         raw_code = (cath_label or "").strip()
         if not raw_code or raw_code == "-":
             return None
 
         display_code = raw_code.split(",")[0].strip()
-        numeric_code = strip_t_prefixes(display_code)
-        if not numeric_code or numeric_code == "-":
+        confirmed_code = strip_t_prefixes(display_code)
+        if not confirmed_code or confirmed_code == "-":
             return None
 
-        cache_key = f"{display_code}|{estimation_source}"
+        cache_key = (
+            f"{display_code}|{fold_hint or ''}|{estimation_source}"
+            f"|{int(novel_fold_candidate)}|{int(include_funfams)}"
+        )
         if self.cache:
-            cached = self.cache.get("cath_resolution_v3", cache_key)
+            cached = self.cache.get("cath_resolution_v4", cache_key)
             if cached is not None:
                 return CathResolution.model_validate(cached)
 
-        display_parts = [p for p in display_code.split(".") if p]
-        num_parts = [p for p in numeric_code.split(".") if p]
-        depth = len(num_parts)
-        estimated = is_estimated_cath_code(display_code) or estimation_source != "ted_official"
+        display_parts = [p.strip() for p in display_code.split(".") if p.strip()]
+        confirmed_parts = [
+            p.lstrip("Tt").strip()
+            for p in display_parts
+            if p != "?" and not p.upper().startswith("T")
+        ]
+        confirmed_depth = len(confirmed_parts)
 
+        hint_parts = [
+            p.lstrip("Tt").strip()
+            for p in (fold_hint or "").split(".")
+            if p.strip() and p.strip() != "?" and not p.strip().upper().startswith("T")
+        ]
+
+        estimated = is_estimated_cath_code(display_code) or estimation_source != "ted_official"
         assignment_level = (
             "inferred"
             if estimated
-            else ("H" if depth >= 4 else ("T" if depth == 3 else "-"))
+            else ("H" if confirmed_depth >= 4 else ("T" if confirmed_depth == 3 else "-"))
         )
-        t_code_numeric = ".".join(num_parts[:3]) if depth >= 3 else None
-        t_code_display = ".".join(display_parts[:3]) if len(display_parts) >= 3 else t_code_numeric
-        a_code_numeric = ".".join(num_parts[:2]) if depth >= 2 else None
-        c_code_numeric = num_parts[0] if depth >= 1 else None
+
+        # Only expose Topology / Architecture codes when actually confirmed at that depth
+        t_code_numeric = ".".join(confirmed_parts[:3]) if confirmed_depth >= 3 else None
+        t_code_display = ".".join(confirmed_parts[:3]) if confirmed_depth >= 3 else None
+        a_code_numeric = ".".join(confirmed_parts[:2]) if confirmed_depth >= 2 else None
+        c_code_numeric = confirmed_parts[0] if confirmed_depth >= 1 else None
 
         resolution = CathResolution(
             cath_label=display_code,
-            numeric_cath_code=numeric_code,
+            numeric_cath_code=confirmed_code,
             raw_ted_cath_label=raw_ted_cath_label,
             is_estimated=estimated,
             estimation_source=estimation_source,
             assignment_level=assignment_level,
             topology_code=t_code_display,
             class_name=_CATH_CLASS_NAMES.get(c_code_numeric or ""),
+            fold_hint=fold_hint,
+            novel_fold_candidate=novel_fold_candidate,
         )
 
         tasks = []
-        # 1. Populate H-level superfamily name when H-code comes from official TED, G3DSA, or profile-to-CATH map
-        if depth >= 4 and estimation_source in {
-            "ted_official",
-            "g3dsa_overlap",
-            "ted_t_plus_g3dsa",
-            "ted_t_plus_g3dsa_h",
-            "profile_cath_map",
-            "ted_t_plus_profile",
-        }:
-            h_code_numeric = ".".join(num_parts[:4])
+        # 1. Populate H-level superfamily name only when H is confirmed or backed by high-purity homology (>= depth 3)
+        can_query_h = (confirmed_depth >= 4) or (
+            estimation_source
+            in {
+                "g3dsa_overlap",
+                "ted_t_plus_g3dsa",
+                "ted_t_plus_g3dsa_h",
+                "profile_cath_map",
+                "ted_t_plus_profile",
+            }
+            and confirmed_depth >= 3
+            and len(hint_parts) >= 4
+        )
+        h_code_numeric: Optional[str] = None
+        if confirmed_depth >= 4:
+            h_code_numeric = ".".join(confirmed_parts[:4])
+        elif can_query_h:
+            h_code_numeric = ".".join(hint_parts[:4])
+
+        if h_code_numeric:
             pre_resolved = False
             if self.cache:
-                cached_h = self.cache.get("cath_h_ipr", h_code_numeric)
+                cached_h = self.cache.get("cath_h_ipr_v2", h_code_numeric)
                 if isinstance(cached_h, dict):
                     resolution.integrated_ipr = cached_h.get("integrated_ipr")
                     resolution.superfamily_name = cached_h.get("superfamily_name")
@@ -103,10 +138,15 @@ class CathClient:
                 for a in overlapping_annotations:
                     if a.accession.upper() == target_g3d and (a.integrated_ipr_name or a.name):
                         resolution.integrated_ipr = a.integrated_ipr
-                        resolution.superfamily_name = (a.integrated_ipr_name or a.name).rstrip(".")
+                        if a.integrated_ipr_name:
+                            resolution.superfamily_name = a.integrated_ipr_name.rstrip(".")
+                        elif h_code_numeric in CURATED_UNINTEGRATED_CATH_H_NAMES:
+                            resolution.superfamily_name = CURATED_UNINTEGRATED_CATH_H_NAMES[h_code_numeric]
+                        else:
+                            resolution.superfamily_name = a.name.rstrip(".")
                         if self.cache:
                             self.cache.set(
-                                "cath_h_ipr",
+                                "cath_h_ipr_v2",
                                 h_code_numeric,
                                 {
                                     "integrated_ipr": resolution.integrated_ipr,
@@ -115,27 +155,38 @@ class CathClient:
                             )
                         pre_resolved = True
                         break
+
             if not pre_resolved:
                 tasks.append(self._populate_h_level_from_interpro(h_code_numeric, resolution))
             if include_funfams:
                 tasks.append(self._populate_funfams(h_code_numeric, resolution))
 
-        # 2. Populate T name from CATH cathtree (and A name only if cached or include_funfams=True)
+        # 2. Populate T name from CATH v4.4 cathtree ONLY when T-level (depth >= 3) is confirmed
         async def _set_t() -> None:
             if t_code_numeric:
                 resolution.topology_name = await self._fetch_cathtree_name(t_code_numeric, 3)
 
-        tasks.append(_set_t())
+        if t_code_numeric:
+            tasks.append(_set_t())
         if include_funfams and a_code_numeric:
             async def _set_a() -> None:
                 resolution.architecture_name = await self._fetch_cathtree_name(a_code_numeric, 2)
+
             tasks.append(_set_a())
 
         if tasks:
             await asyncio.gather(*tasks)
 
+        # Ensure curated override applies even if InterPro returned a raw legacy unintegrated title
+        if (
+            h_code_numeric
+            and not resolution.integrated_ipr
+            and h_code_numeric in CURATED_UNINTEGRATED_CATH_H_NAMES
+        ):
+            resolution.superfamily_name = CURATED_UNINTEGRATED_CATH_H_NAMES[h_code_numeric]
+
         if self.cache:
-            self.cache.set("cath_resolution_v3", cache_key, resolution.model_dump())
+            self.cache.set("cath_resolution_v4", cache_key, resolution.model_dump())
 
         return resolution
 
@@ -144,6 +195,8 @@ class CathClient:
         try:
             resp = await self.http.get(url, headers={"Accept": "application/json"}, timeout=15.0)
             if resp.status_code != 200:
+                if h_code in CURATED_UNINTEGRATED_CATH_H_NAMES:
+                    resolution.superfamily_name = CURATED_UNINTEGRATED_CATH_H_NAMES[h_code]
                 return
             metadata = resp.json().get("metadata", {})
             name_obj = metadata.get("name") or {}
@@ -168,7 +221,7 @@ class CathClient:
                         resolution.superfamily_name = str(ipr_name).rstrip(".")
                         if self.cache:
                             self.cache.set(
-                                "cath_h_ipr",
+                                "cath_h_ipr_v2",
                                 h_code,
                                 {
                                     "integrated_ipr": resolution.integrated_ipr,
@@ -177,11 +230,14 @@ class CathClient:
                             )
                         return
 
-            if direct_name:
+            if not resolution.integrated_ipr and h_code in CURATED_UNINTEGRATED_CATH_H_NAMES:
+                resolution.superfamily_name = CURATED_UNINTEGRATED_CATH_H_NAMES[h_code]
+            elif direct_name:
                 resolution.superfamily_name = str(direct_name).rstrip(".")
+
             if self.cache and resolution.superfamily_name:
                 self.cache.set(
-                    "cath_h_ipr",
+                    "cath_h_ipr_v2",
                     h_code,
                     {
                         "integrated_ipr": resolution.integrated_ipr,
@@ -189,46 +245,53 @@ class CathClient:
                     },
                 )
         except Exception:
+            if h_code in CURATED_UNINTEGRATED_CATH_H_NAMES:
+                resolution.superfamily_name = CURATED_UNINTEGRATED_CATH_H_NAMES[h_code]
             return
 
     async def _fetch_cathtree_name(self, cath_id: str, depth: int) -> Optional[str]:
         if self.cache:
-            cached_name = self.cache.get("cath_tree_node", f"{cath_id}:{depth}")
+            cached_name = self.cache.get("cath_tree_node_v44", f"{cath_id}:{depth}")
             if cached_name is not None:
                 return cached_name or None
 
-        url = f"{CATH_API_BASE}/cathtree/from_cath_id_to_depth/{cath_id}/{depth}"
-        try:
-            resp = await self.http.get(url, headers={"Accept": "application/json"}, timeout=12.0)
-            if resp.status_code != 200:
-                return None
-            data = resp.json()
-            name = (data.get("name") or "").strip().rstrip(".")
-            if self.cache:
-                self.cache.set("cath_tree_node", f"{cath_id}:{depth}", name)
-            return name or None
-        except Exception:
-            return None
+        for base_url in (CATH_API_BASE, CATH_API_FALLBACK_BASE):
+            url = f"{base_url}/cathtree/from_cath_id_to_depth/{cath_id}/{depth}"
+            try:
+                resp = await self.http.get(url, headers={"Accept": "application/json"}, timeout=12.0)
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                name = (data.get("name") or "").strip().rstrip(".")
+                if name:
+                    if self.cache:
+                        self.cache.set("cath_tree_node_v44", f"{cath_id}:{depth}", name)
+                    return name
+            except Exception:
+                continue
+        return None
 
     async def _populate_funfams(self, h_code: str, resolution: CathResolution) -> None:
-        url = f"{CATH_API_BASE}/superfamily/{h_code}/funfam"
-        try:
-            resp = await self.http.get(url, headers={"Accept": "application/json"}, timeout=12.0)
-            if resp.status_code != 200:
-                return
-            data = resp.json().get("data", [])
-            if not isinstance(data, list):
-                return
-            seen: list[str] = []
-            for item in data:
-                if not isinstance(item, dict):
+        for base_url in (CATH_API_BASE, CATH_API_FALLBACK_BASE):
+            url = f"{base_url}/superfamily/{h_code}/funfam"
+            try:
+                resp = await self.http.get(url, headers={"Accept": "application/json"}, timeout=12.0)
+                if resp.status_code != 200:
                     continue
-                ff_name = (item.get("name") or "").strip()
-                if ff_name and ff_name.lower() not in {"uncharacterized protein", "unassigned"}:
-                    if ff_name not in seen:
-                        seen.append(ff_name)
-                if len(seen) >= 5:
-                    break
-            resolution.funfam_names = seen
-        except Exception:
-            return
+                data = resp.json().get("data", [])
+                if not isinstance(data, list):
+                    continue
+                seen: list[str] = []
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    ff_name = (item.get("name") or "").strip()
+                    if ff_name and ff_name.lower() not in {"uncharacterized protein", "unassigned"}:
+                        if ff_name not in seen:
+                            seen.append(ff_name)
+                    if len(seen) >= 5:
+                        break
+                resolution.funfam_names = seen
+                return
+            except Exception:
+                continue

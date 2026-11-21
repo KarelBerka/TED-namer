@@ -13,7 +13,11 @@ import httpx
 
 from ted_namer.aggregator import aggregate_cluster_evidence
 from ted_namer.cache import ApiCache
-from ted_namer.cath_classifier import infer_cath_classification
+from ted_namer.cath_classifier import (
+    infer_cath_classification,
+    is_estimated_cath_code,
+    is_novel_fold_source,
+)
 from ted_namer.clients.cath import CathClient
 from ted_namer.clients.interpro import InterProClient
 from ted_namer.clients.ted import TedClient
@@ -72,7 +76,7 @@ class TedNamingPipeline:
             all_annots.sort(key=lambda a: (a.iou, a.ted_coverage), reverse=True)
 
             # First attempt CATH classification using TED official, G3DSA overlap, and Profile-to-CATH map
-            inferred_cath, _numeric_cath, est_source = infer_cath_classification(
+            inferred_cath, numeric_hint, est_source = infer_cath_classification(
                 member=member,
                 overlapping_annotations=all_annots,
                 pdb_text=None,
@@ -82,7 +86,7 @@ class TedNamingPipeline:
             if self.fetch_pdb and ted_client is not None and est_source.startswith("rule_"):
                 pdb_text = await ted_client.get_domain_pdb(member.ted_id)
                 if pdb_text:
-                    inferred_cath, _numeric_cath, est_source = infer_cath_classification(
+                    inferred_cath, numeric_hint, est_source = infer_cath_classification(
                         member=member,
                         overlapping_annotations=all_annots,
                         pdb_text=pdb_text,
@@ -90,12 +94,16 @@ class TedNamingPipeline:
 
             member.inferred_cath_label = inferred_cath
             member.cath_estimation_source = est_source
+            member.cath_fold_hint = numeric_hint if is_estimated_cath_code(inferred_cath) else None
+            member.novel_fold_candidate = is_novel_fold_source(est_source)
 
             cath_info = await cath_client.resolve_cath_label(
                 cath_label=inferred_cath,
                 raw_ted_cath_label=member.cath_label,
                 estimation_source=est_source,
                 overlapping_annotations=all_annots,
+                fold_hint=member.cath_fold_hint,
+                novel_fold_candidate=member.novel_fold_candidate,
             )
 
         prot_len = prot_ctx.protein_length if prot_ctx else 0

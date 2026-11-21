@@ -64,13 +64,22 @@ class TedDomainMember(BaseModel):
     cath_label: str = "-"
     cath_assignment_level: str = "-"
     cath_assignment_method: str = "-"
+    consensus_level: Optional[str] = None
     inferred_cath_label: Optional[str] = Field(
         default=None,
-        description="Full 4-level CATH label where estimated levels are prefixed with 'T' (e.g. '3.T40.T50.T10')",
+        description="Full 4-level CATH label where unconfirmed levels use '?' wildcards (e.g. '2.60.40.720', '2.60.40.?', '3.?.?.?')",
+    )
+    cath_fold_hint: Optional[str] = Field(
+        default=None,
+        description="Underlying 4-part geometric/profile numeric hint when inferred_cath_label contains '?' (e.g. '3.40.50.10')",
+    )
+    novel_fold_candidate: bool = Field(
+        default=False,
+        description="True when unassigned in TED and no G3DSA or high-purity Profile-to-CATH match exists",
     )
     cath_estimation_source: Optional[str] = Field(
         default=None,
-        description="How the CATH label was obtained: 'ted_official', 'g3dsa_overlap', 'sse_heuristic'",
+        description="How the CATH label was obtained: 'ted_official', 'g3dsa_overlap', 'profile_cath_map', or 'rule_*'",
     )
     packing_density: Optional[float] = None
     norm_rg: Optional[float] = None
@@ -107,12 +116,12 @@ class OverlappingAnnotation(BaseModel):
 
 
 class CathResolution(BaseModel):
-    """Resolved human-readable names for a CATH code (H-level and/or T-level), supporting 'T'-prefixed estimates."""
+    """Resolved human-readable names for a CATH code (H-level and/or T-level), supporting '?' wildcard notation."""
 
-    cath_label: str = Field(description="Formatted CATH code (e.g. '2.60.40.720' or '3.T40.T50.T10')")
+    cath_label: str = Field(description="Formatted CATH code (e.g. '2.60.40.720', '2.60.40.?', or '3.?.?.?')")
     numeric_cath_code: Optional[str] = Field(
         default=None,
-        description="Underlying numeric CATH code without 'T' prefixes (e.g. '3.40.50.10')",
+        description="Confirmed numeric CATH prefix without '?' wildcards or 'T' prefixes (e.g. '2.60.40' or '3')",
     )
     raw_ted_cath_label: str = "-"
     is_estimated: bool = False
@@ -120,10 +129,12 @@ class CathResolution(BaseModel):
     assignment_level: str = "-"  # "H", "T", or "inferred"
     superfamily_name: Optional[str] = None  # H-level name from Gene3D / InterPro / CATH
     integrated_ipr: Optional[str] = None
-    topology_code: Optional[str] = None  # 3-part C.A.T code (with T prefixes if estimated)
+    topology_code: Optional[str] = None  # 3-part C.A.T code when confirmed at depth >= 3
     topology_name: Optional[str] = None  # T-level fold name from CATH cathtree
     architecture_name: Optional[str] = None  # A-level name
     class_name: Optional[str] = None  # C-level name
+    fold_hint: Optional[str] = None
+    novel_fold_candidate: bool = False
     funfam_names: list[str] = Field(default_factory=list)
     representative_pdb_title: Optional[str] = None
 
@@ -186,6 +197,9 @@ class ClusterNamingResult(BaseModel):
     naming_method: str = Field(description="'rule_based' or 'llm_consensus'")
     rationale: str
     dominant_cath_label: str = "-"
+    cath_fold_hint: Optional[str] = None
+    novel_fold_candidate: bool = False
+    structure_quality_flags: list[str] = Field(default_factory=list)
     cath_summary: Optional[CathResolution] = None
     consensus_relative_position: Optional[str] = None
     taxonomic_summary: list[str] = Field(default_factory=list)
