@@ -54,17 +54,17 @@ For single domains or homologous clusters, `TedNamingPipeline` executes six cach
 
 # Empirical Validation and Accuracy
 
-We evaluated `ted-namer` (`v0.2.0`) across **100,000 randomly sampled TED domains** (10 deciles of 10,000 domains) and performed blind hold-out 5-fold cross-validation on all $N = 72,130$ official 4-level CATH domains (\autoref{fig:validation}).
+We evaluated `ted-namer` (`v0.2.0`) across **100,000 randomly sampled TED domains** (`41,138` UniProt proteins; 10 deciles of 10,000 domains) and performed blind hold-out 5-fold cross-validation across all $N = 72,130$ official 4-level CATH domains (`34,443` UniProt proteins; \autoref{fig:validation}). Uncertainty is quantified via protein-clustered nonparametric bootstrap 95% confidence intervals ($B = 2,000$ resamples grouped by `uniprot_acc`).
 
-![Empirical validation of `ted-namer` (`v0.2.0`) across 100,000 TED domains. (A) Distribution of naming specificity tiers, resolving 87.0% to specific domains/subdomains (Tier 1) or curated superfamilies (Tier 2). (B) Blind hold-out CATH accuracy across hierarchy levels ($N = 72,130$).\label{fig:validation}](figure1_validation.png)
+![Empirical validation of `ted-namer` (`v0.2.0`) across 100,000 TED domains. (A) Distribution of naming specificity tiers across 41,138 UniProt proteins, resolving 86.96% (±0.27%) to specific domains/subdomains (Tier 1) or curated superfamilies (Tier 2). (B) Blind hold-out CATH accuracy across hierarchy levels ($N = 72,130$ domains across 34,443 proteins). Error bars denote 95% protein-clustered bootstrap confidence intervals ($B = 2,000$).\label{fig:validation}](figure1_validation.png)
 
-Across 100,000 domains, **62.43%** (`62,425`, decile range 61.4--63.3%, including `5,934` multi-lobe subdomains) received Tier 1 names (mean confidence $0.889$), **24.54%** (`24,537`) received Tier 2 superfamily names ($0.769$), **12.86%** (`12,858`) received Tier 3 family-context names ($0.422$), and **0.18%** (`180`) fell to Tier 4/5 fallbacks. Enforcing hygiene rules eliminated bare positional names (`149` $\to$ `0`), bracketed gene tags (`703` $\to$ `0`), adjacent duplicate `domain` strings (`8` $\to$ `0`), and `T`-prefix collisions (`26,187` $\to$ `0`, with `10,740` = `10.74%` flagged `novel_fold_candidate`), reduced legacy lowercase starts from `5,054` to `744` biochemical prefixes, and restricted strict legacy PDB artifacts to **0.036%** (`36 / 100,000`). Leave-one-database-out testing (masking `Pfam`, $N = 36,843$) achieved **91.23%** exact normalized name concordance and **96.45%** semantic concordance.
+Across 100,000 domains, **62.43% ± 0.38%** (`62,425`, decile range 61.4--63.3%, including `5,934` multi-lobe subdomains) received Tier 1 names (mean confidence $0.889$), **24.54% ± 0.32%** (`24,537`) received Tier 2 superfamily names ($0.769$), **12.86% ± 0.27%** (`12,858`) received Tier 3 family-context names ($0.422$), and **0.18% ± 0.04%** (`180`) fell to Tier 4/5 fallbacks. Enforcing hygiene rules eliminated bare positional names (`149` $\to$ `0`), bracketed gene tags (`703` $\to$ `0`), adjacent duplicate `domain` strings (`8` $\to$ `0`), and `T`-prefix collisions (`26,187` $\to$ `0`, with `10,740` = `10.74%` flagged `novel_fold_candidate`), reduced legacy lowercase starts from `5,054` to `744` biochemical prefixes, and restricted strict legacy PDB artifacts to **0.036%** (`36 / 100,000`). Leave-one-database-out testing (masking `Pfam`, $N = 36,843$) achieved **91.23%** exact normalized name concordance and **96.45%** semantic concordance.
 
 | Validation Benchmark ($N = 72,130$) | Class ($C$) | Architecture ($C.A$) | Topology ($C.A.T$) | Superfamily ($C.A.T.H$) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Confirmed Direct (Non-`?`) Precision** | **98.2%** | **98.6%** | **98.1%** | **99.8%** |
-| **`Profile-to-CATH` Bridge (5-Fold CV)** | **99.3%** | **98.6%** | **97.9%** | **92.3%** |
-| **Full Fallback Cascade** (Mask TED CATH) | **98.2%** | **95.2%** | **93.9%** | **91.1%** |
+| **Confirmed Direct (Non-`?`) Precision** | **98.15 ± 0.11%** | **98.57 ± 0.09%** | **98.07 ± 0.11%** | **99.78 ± 0.05%** |
+| **`Profile-to-CATH` Bridge (5-Fold CV)** | **99.28 ± 0.07%** | **98.63 ± 0.10%** | **97.93 ± 0.12%** | **92.29 ± 0.22%** |
+| **Full Fallback Cascade** (Mask TED CATH) | **98.15 ± 0.11%** | **95.22 ± 0.17%** | **93.94 ± 0.19%** | **91.10 ± 0.23%** |
 
 # Availability
 

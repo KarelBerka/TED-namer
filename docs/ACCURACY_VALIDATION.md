@@ -10,23 +10,40 @@ To measure true predictive accuracy against experimental/Foldseek structural ass
 
 | Validation Scenario ($N = 72,130$) | Class ($C$) Accuracy | Architecture ($C.A$) Accuracy | Topology ($C.A.T$) Accuracy | Superfamily ($C.A.T.H$) Accuracy |
 | :--- | :---: | :---: | :---: | :---: |
-| **Scenario A: Full Fallback Cascade**<br>*(Mask TED `cath_label`; allow `G3DSA` $\to$ 5-fold CV `Profile-to-CATH` $\to$ `3D/SSE rules`)* | **98.2%** (`98.16%`) | **95.2%** (`95.22%`) | **93.9%** (`93.94%`) | **91.1%** (`91.10%`) |
+| **Scenario A: Full Fallback Cascade**<br>*(Mask TED `cath_label`; allow `G3DSA` $\to$ 5-fold CV `Profile-to-CATH` $\to$ `3D/SSE rules`)* | **98.2%** (`98.15%`) | **95.2%** (`95.22%`) | **93.9%** (`93.94%`) | **91.1%** (`91.10%`) |
 | **Scenario B: No Structural CATH DBs**<br>*(Mask both TED `cath_label` AND `G3DSA`; allow 5-fold CV `Profile-to-CATH` $\to$ `3D/SSE rules`)* | **97.0%** (`96.99%`) | **90.4%** (`90.35%`) | **87.7%** (`87.73%`) | **81.3%** (`81.33%`) |
-| **Scenario B1: `Profile-to-CATH` Bridge Alone**<br>*(5-fold out-of-sample Pfam/SUPERFAMILY/CDD/IPR $\to$ CATH, covering 87.9% of domains)* | **99.3%** (`99.28%`) | **98.6%** (`98.63%`) | **97.9%** (`97.94%`) | **92.3%** (`92.29%`) |
+| **Scenario B1: `Profile-to-CATH` Bridge Alone**<br>*(5-fold out-of-sample Pfam/SUPERFAMILY/CDD/IPR $\to$ CATH, covering 87.9% of domains)* | **99.3%** (`99.28%`) | **98.6%** (`98.63%`) | **97.9%** (`97.93%`) | **92.3%** (`92.29%`) |
 | **Scenario C: Pure 3D/SSE Rules Only**<br>*(Mask all sequence/profile annotations; geometry & SSE counts only)* | **85.6%**<br>*(96.7% pure $\alpha/\beta$)* | **41.5%** | **25.4%** | — |
 
 ### Precision of Confirmed Direct (Non-Wildcard `?`-Free) CATH Levels ($N = 72,130$)
 
 Aligned with TED (*Lau et al., Science 2024*) and CATH v4.4 (*Waman et al., NAR 2025*), `ted-namer` avoids conflating computational estimates with CATH's `T`-level (Topology) code. A hierarchy level is emitted as a confirmed integer **only when empirical out-of-sample precision exceeds 90%**; deeper unconfirmed levels use explicit **`?` wildcards** (e.g., `2.60.40.?` or `3.?.?.?`), while numeric estimates are preserved separately in `cath_fold_hint` alongside `novel_fold_candidate = True`:
 
-| CATH Level Emitted as Confirmed Integer (Non-`?`) | Claimed Count (out of 72,130) | Empirical Precision |
-| :--- | :---: | :---: |
-| **Level 1: Class ($C$)** | 72,130 (100.0%) | **98.16%** |
-| **Level 2: Architecture ($C.A$)** | 67,115 (93.0%) | **98.57%** |
-| **Level 3: Topology ($C.A.T$)** | 67,110 (93.0%) | **98.07%** |
-| **Level 4: Homologous Superfamily ($C.A.T.H$)** | 48,913 (67.8%) | **99.78%** |
+| CATH Level Emitted as Confirmed Integer (Non-`?`) | Claimed Count (out of 72,130) | Empirical Precision | 95% Protein-Clustered Bootstrap CI |
+| :--- | :---: | :---: | :---: |
+| **Level 1: Class ($C$)** | 72,130 (100.0%) | **98.15%** | [98.05%, 98.25%] ($\pm 0.11\%$) |
+| **Level 2: Architecture ($C.A$)** | 67,115 (93.0%) | **98.57%** | [98.48%, 98.66%] ($\pm 0.09\%$) |
+| **Level 3: Topology ($C.A.T$)** | 67,110 (93.0%) | **98.07%** | [97.96%, 98.18%] ($\pm 0.11\%$) |
+| **Level 4: Homologous Superfamily ($C.A.T.H$)** | 48,913 (67.8%) | **99.78%** | [99.73%, 99.82%] ($\pm 0.05\%$) |
 
 > **Key Takeaway**: Across all 100,000 domains, `72,130` (`72.13%`) have full 4-level official CATH codes, `17,130` (`17.13%`) are mapped via partial TED `T`-level (`9,692`), `Profile-to-CATH` (`4,320`), or `G3DSA` (`3,118`), and `10,740` (`10.74%`) lack homology and are explicitly flagged as `novel_fold_candidate = True` with `?` wildcard notation (`C.?.?.?`).
+
+### Bootstrap Uncertainty Quantification ($B = 2,000$, Protein-Clustered)
+
+Because multi-domain UniProt proteins contribute multiple TED domains (up to 6 domains per protein across `41,138` proteins in the 100,000-domain benchmark and `34,443` proteins among the `72,130` official CATH domains), treating domains as independent i.i.d. draws underestimates sampling variance. We therefore compute **nonparametric protein-clustered bootstrap 95% confidence intervals** ($B = 2,000$ resamples of `uniprot_acc` clusters with replacement, `seed = 42`, alongside domain-level i.i.d. bootstrap for comparison) via [`scripts/generate_validation_figure.py`](../scripts/generate_validation_figure.py), persisted in [`examples/benchmark_100000_summary.json`](../examples/benchmark_100000_summary.json) (`bootstrap_95ci`):
+
+| Metric (Panel A — $N = 100,000$ Domains) | Point Estimate | Protein-Clustered 95% CI (41,138 Proteins) | Domain-IID 95% CI Comparison |
+| :--- | :---: | :---: | :---: |
+| **Tier 1: Specific Domain (& Subdomain)** | 62.43% (`62.425%`) | [62.04%, 62.80%] ($\pm 0.38\%$) | [62.13%, 62.72%] ($\pm 0.30\%$) |
+| **Tier 2: Homologous Superfamily (Curated)** | 24.54% (`24.537%`) | [24.22%, 24.85%] ($\pm 0.32\%$) | [24.28%, 24.80%] ($\pm 0.26\%$) |
+| **Tier 1 + Tier 2 Combined Resolution** | 86.96% (`86.962%`) | [86.70%, 87.23%] ($\pm 0.27\%$) | [86.75%, 87.17%] ($\pm 0.22\%$) |
+| **Tier 3: Protein Family + Context** | 12.86% (`12.858%`) | [12.59%, 13.12%] ($\pm 0.27\%$) | [12.65%, 13.07%] ($\pm 0.21\%$) |
+| **Tier 4/5: Fold Fallback & Uncharacterized** | 0.18% (`0.180%`) | [0.15%, 0.22%] ($\pm 0.04\%$) | [0.15%, 0.21%] ($\pm 0.03\%$) |
+
+| Metric (Panel B — $N = 72,130$ Official CATH Domains) | Level | Point Estimate | Protein-Clustered 95% CI (34,443 Proteins) | Domain-IID 95% CI |
+| :--- | :---: | :---: | :---: | :---: |
+| **Profile-to-CATH 5-Fold CV** (`87.94%` coverage) | $C$ / $C.A$ / $C.A.T$ / $C.A.T.H$ | 99.28% / 98.63% / 97.93% / 92.29% | [99.21, 99.34] / [98.54, 98.73] / [97.82, 98.06] / [92.08, 92.51]% | $\pm 0.07$ / $\pm 0.09$ / $\pm 0.11$ / $\pm 0.20\%$ |
+| **Full Fallback Cascade** (Mask TED CATH) | $C$ / $C.A$ / $C.A.T$ / $C.A.T.H$ | 98.15% / 95.22% / 93.94% / 91.10% | [98.05, 98.25] / [95.06, 95.39] / [93.75, 94.12] / [90.86, 91.32]% | $\pm 0.10$ / $\pm 0.16$ / $\pm 0.17$ / $\pm 0.20\%$ |
 
 ---
 

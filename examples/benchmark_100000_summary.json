@@ -428,5 +428,286 @@
       "non_globular": 1850,
       "low_plddt": 2078
     }
+  },
+  "bootstrap_95ci": {
+    "method": "Nonparametric bootstrap (2.5th-97.5th percentiles)",
+    "replicates": 2000,
+    "seed": 42,
+    "primary_estimator": "protein_clustered_by_uniprot_acc",
+    "n_domains_all": 100000,
+    "n_uniprot_clusters_all": 41138,
+    "n_domains_official_cath": 72130,
+    "n_uniprot_clusters_official_cath": 34443,
+    "panel_a_specificity_tiers": {
+      "protein_clustered": {
+        "tier_1_specific_pct": {
+          "point_pct": 62.425,
+          "ci95_low": 62.0426,
+          "ci95_high": 62.7991,
+          "halfwidth_sym": 0.3824,
+          "se_pct": 0.1878
+        },
+        "tier_2_superfamily_pct": {
+          "point_pct": 24.537,
+          "ci95_low": 24.2199,
+          "ci95_high": 24.852,
+          "halfwidth_sym": 0.3171,
+          "se_pct": 0.1622
+        },
+        "tier_1_plus_2_pct": {
+          "point_pct": 86.962,
+          "ci95_low": 86.697,
+          "ci95_high": 87.2323,
+          "halfwidth_sym": 0.2703,
+          "se_pct": 0.1368
+        },
+        "tier_3_family_pct": {
+          "point_pct": 12.858,
+          "ci95_low": 12.589,
+          "ci95_high": 13.1157,
+          "halfwidth_sym": 0.269,
+          "se_pct": 0.1354
+        },
+        "tier_4_5_fallback_pct": {
+          "point_pct": 0.18,
+          "ci95_low": 0.1471,
+          "ci95_high": 0.2173,
+          "halfwidth_sym": 0.0373,
+          "se_pct": 0.018
+        }
+      },
+      "domain_iid_comparison": {
+        "tier_1_specific_pct": {
+          "point_pct": 62.425,
+          "ci95_low": 62.125,
+          "ci95_high": 62.723,
+          "halfwidth_sym": 0.3,
+          "se_pct": 0.1505
+        },
+        "tier_2_superfamily_pct": {
+          "point_pct": 24.537,
+          "ci95_low": 24.277,
+          "ci95_high": 24.8,
+          "halfwidth_sym": 0.263,
+          "se_pct": 0.1336
+        },
+        "tier_1_plus_2_pct": {
+          "point_pct": 86.962,
+          "ci95_low": 86.7469,
+          "ci95_high": 87.169,
+          "halfwidth_sym": 0.2151,
+          "se_pct": 0.1054
+        },
+        "tier_3_family_pct": {
+          "point_pct": 12.858,
+          "ci95_low": 12.651,
+          "ci95_high": 13.067,
+          "halfwidth_sym": 0.209,
+          "se_pct": 0.1051
+        },
+        "tier_4_5_fallback_pct": {
+          "point_pct": 0.18,
+          "ci95_low": 0.153,
+          "ci95_high": 0.206,
+          "halfwidth_sym": 0.027,
+          "se_pct": 0.0134
+        }
+      }
+    },
+    "panel_b_cath_validation": {
+      "confirmed_direct_precision": {
+        "protein_clustered": {
+          "C": {
+            "point_pct": 98.1547,
+            "ci95_low": 98.0489,
+            "ci95_high": 98.2538,
+            "halfwidth_sym": 0.1058,
+            "se_pct": 0.0528
+          },
+          "C.A": {
+            "point_pct": 98.5696,
+            "ci95_low": 98.4752,
+            "ci95_high": 98.6622,
+            "halfwidth_sym": 0.0944,
+            "se_pct": 0.0479
+          },
+          "C.A.T": {
+            "point_pct": 98.0703,
+            "ci95_low": 97.9603,
+            "ci95_high": 98.1757,
+            "halfwidth_sym": 0.11,
+            "se_pct": 0.0554
+          },
+          "C.A.T.H": {
+            "point_pct": 99.7772,
+            "ci95_low": 99.7313,
+            "ci95_high": 99.8204,
+            "halfwidth_sym": 0.0459,
+            "se_pct": 0.0231
+          }
+        },
+        "domain_iid_comparison": {
+          "C": {
+            "point_pct": 98.1547,
+            "ci95_low": 98.0549,
+            "ci95_high": 98.2532,
+            "halfwidth_sym": 0.0999,
+            "se_pct": 0.0498
+          },
+          "C.A": {
+            "point_pct": 98.5696,
+            "ci95_low": 98.4797,
+            "ci95_high": 98.6581,
+            "halfwidth_sym": 0.0899,
+            "se_pct": 0.0456
+          },
+          "C.A.T": {
+            "point_pct": 98.0703,
+            "ci95_low": 97.964,
+            "ci95_high": 98.173,
+            "halfwidth_sym": 0.1064,
+            "se_pct": 0.0535
+          },
+          "C.A.T.H": {
+            "point_pct": 99.7772,
+            "ci95_low": 99.7366,
+            "ci95_high": 99.8183,
+            "halfwidth_sym": 0.0412,
+            "se_pct": 0.0212
+          }
+        }
+      },
+      "profile_to_cath_5fold_cv": {
+        "coverage_pct": {
+          "point_pct": 87.9398,
+          "ci95_low": 87.685,
+          "ci95_high": 88.1949,
+          "halfwidth_sym": 0.255,
+          "se_pct": 0.128
+        },
+        "protein_clustered": {
+          "C": {
+            "point_pct": 99.2764,
+            "ci95_low": 99.208,
+            "ci95_high": 99.3437,
+            "halfwidth_sym": 0.0684,
+            "se_pct": 0.0337
+          },
+          "C.A": {
+            "point_pct": 98.6332,
+            "ci95_low": 98.5398,
+            "ci95_high": 98.7304,
+            "halfwidth_sym": 0.0972,
+            "se_pct": 0.0478
+          },
+          "C.A.T": {
+            "point_pct": 97.9348,
+            "ci95_low": 97.8164,
+            "ci95_high": 98.0556,
+            "halfwidth_sym": 0.1208,
+            "se_pct": 0.0607
+          },
+          "C.A.T.H": {
+            "point_pct": 92.294,
+            "ci95_low": 92.0825,
+            "ci95_high": 92.51,
+            "halfwidth_sym": 0.216,
+            "se_pct": 0.113
+          }
+        },
+        "domain_iid_comparison": {
+          "C": {
+            "point_pct": 99.2764,
+            "ci95_low": 99.2092,
+            "ci95_high": 99.344,
+            "halfwidth_sym": 0.0676,
+            "se_pct": 0.0338
+          },
+          "C.A": {
+            "point_pct": 98.6332,
+            "ci95_low": 98.5412,
+            "ci95_high": 98.7236,
+            "halfwidth_sym": 0.0919,
+            "se_pct": 0.0463
+          },
+          "C.A.T": {
+            "point_pct": 97.9348,
+            "ci95_low": 97.82,
+            "ci95_high": 98.0412,
+            "halfwidth_sym": 0.1148,
+            "se_pct": 0.0565
+          },
+          "C.A.T.H": {
+            "point_pct": 92.294,
+            "ci95_low": 92.0915,
+            "ci95_high": 92.497,
+            "halfwidth_sym": 0.203,
+            "se_pct": 0.1049
+          }
+        }
+      },
+      "full_fallback_cascade": {
+        "protein_clustered": {
+          "C": {
+            "point_pct": 98.1547,
+            "ci95_low": 98.0489,
+            "ci95_high": 98.2538,
+            "halfwidth_sym": 0.1058,
+            "se_pct": 0.0528
+          },
+          "C.A": {
+            "point_pct": 95.2225,
+            "ci95_low": 95.056,
+            "ci95_high": 95.3881,
+            "halfwidth_sym": 0.1665,
+            "se_pct": 0.0856
+          },
+          "C.A.T": {
+            "point_pct": 93.9401,
+            "ci95_low": 93.7491,
+            "ci95_high": 94.1193,
+            "halfwidth_sym": 0.191,
+            "se_pct": 0.0955
+          },
+          "C.A.T.H": {
+            "point_pct": 91.0994,
+            "ci95_low": 90.8645,
+            "ci95_high": 91.3203,
+            "halfwidth_sym": 0.2349,
+            "se_pct": 0.117
+          }
+        },
+        "domain_iid_comparison": {
+          "C": {
+            "point_pct": 98.1547,
+            "ci95_low": 98.0549,
+            "ci95_high": 98.2532,
+            "halfwidth_sym": 0.0999,
+            "se_pct": 0.0498
+          },
+          "C.A": {
+            "point_pct": 95.2225,
+            "ci95_low": 95.0672,
+            "ci95_high": 95.3764,
+            "halfwidth_sym": 0.1553,
+            "se_pct": 0.079
+          },
+          "C.A.T": {
+            "point_pct": 93.9401,
+            "ci95_low": 93.7724,
+            "ci95_high": 94.1107,
+            "halfwidth_sym": 0.1706,
+            "se_pct": 0.0869
+          },
+          "C.A.T.H": {
+            "point_pct": 91.0994,
+            "ci95_low": 90.897,
+            "ci95_high": 91.3018,
+            "halfwidth_sym": 0.2024,
+            "se_pct": 0.1044
+          }
+        }
+      }
+    }
   }
 }
