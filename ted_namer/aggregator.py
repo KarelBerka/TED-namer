@@ -39,6 +39,15 @@ _LEGACY_PDB_HEADER_RE = re.compile(
     re.IGNORECASE,
 )
 
+_STRICT_PDB_ARTIFACT_RE = re.compile(
+    r"(;\s*domain\s+\d+|\.\s*Chain\s+[A-Z0-9]+|Transferase\(|Phosphorylase Kinase|Vaccinia Virus)",
+    re.IGNORECASE,
+)
+
+_PRESERVE_LOWERCASE_PREFIX_RE = re.compile(
+    r"^(?:[a-z][A-Z0-9]|[a-z]{1,2}-|von\s+|alpha-|beta-|gamma-|delta-|epsilon-|omega-|cis-|trans-)"
+)
+
 _SENTENCE_LIKE_RE = re.compile(
     r"\b(is involved in|involved in|interacts with|interacts|mediates|comprises|"
     r"required for|essential for|responsible for|binds to|important for|found in .+ and related)\b",
@@ -115,6 +124,10 @@ def clean_display_domain_name(name: str, tier: SpecificityTier) -> str:
     # Preserve capitalization unless the entire string is ALL CAPS (like PANTHER 'CELLULAR TUMOR ANTIGEN P53')
     if txt.isupper() and len(txt) > 6:
         txt = txt.capitalize()
+
+    # Capitalize plain lowercase-starting names while preserving biochemical prefixes (p53, tRNA, von Willebrand, beta-...)
+    if txt and txt[0].islower() and not _PRESERVE_LOWERCASE_PREFIX_RE.match(txt):
+        txt = txt[0].upper() + txt[1:]
 
     # Deduplicate redundant 'domain' words
     txt = re.sub(r"\bdomain-like\s+domain\b", "domain-like", txt, flags=re.IGNORECASE)
@@ -705,7 +718,15 @@ def aggregate_cluster_evidence(
             p_quality = 0.25
         else:
             p_quality = 1.0
-            if _LEGACY_PDB_HEADER_RE.search(best_raw_name) or _LEGACY_PDB_HEADER_RE.search(canonical):
+            is_unintegrated_sf_pdb = (
+                best_tier == SpecificityTier.SUPERFAMILY
+                and "interpro" not in acc_obj.source_dbs
+                and bool(_LEGACY_PDB_HEADER_RE.search(best_raw_name) or _LEGACY_PDB_HEADER_RE.search(canonical))
+            )
+            is_strict_pdb_artifact = bool(
+                _STRICT_PDB_ARTIFACT_RE.search(best_raw_name) or _STRICT_PDB_ARTIFACT_RE.search(canonical)
+            )
+            if is_unintegrated_sf_pdb or is_strict_pdb_artifact:
                 p_quality *= 0.65
             if is_sentence_like_description(best_raw_name):
                 p_quality *= 0.40

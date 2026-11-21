@@ -99,15 +99,15 @@ To eliminate any ambiguity with CATH's own `T`-level (*Topology*):
 
 [`determine_annotation_tier`](../ted_namer/aggregator.py) strictly honors curated InterPro `annotation_type` semantics rather than letting database membership override entry scope:
 
-- **Tier 1 (`specific_domain`, $W = 1.00$, `62.14%` of 100k domains)**:
+- **Tier 1 (`specific_domain`, $W = 1.00$, `62.43%` of 100k domains)**:
   - Any curated `domain` or `repeat` entry (`CDD`, `Pfam`, `SMART`, `profile`, `InterPro`, `NCBIfam domain`, `UniProt feature`) matching domain boundaries ($\text{IoU} \ge 0.35$ or both coverages $\ge 0.50$).
   - Single-domain **`Pfam` `family`** entries ONLY with strict 1:1 structural correspondence ($\text{IoU} \ge 0.65 \land \text{Cov}_{\text{Annot}} \ge 0.70 \land \text{Cov}_{\text{TED}} \ge 0.65$).
   - **`motif` / `region`** entries ONLY with strict 1:1 overlap ($\text{IoU} \ge 0.65 \land \text{Cov}_{\text{TED}} \ge 0.70$) AND concise non-sentence labels.
-  - **Multi-Lobe Structural Subdomains**: Curated `domain` hits split by TED into internal structural lobes ($\text{Cov}_{\text{TED}} \ge 0.80, 0.20 \le \text{Cov}_{\text{Annot}} < 0.50$, e.g., `Protein kinase N-terminal subdomain`, `Cytochrome P450 central subdomain`), resolving **5,901 domains** across 100k.
-- **Tier 2 (`superfamily`, $W = 0.85$, `24.69%`)**:
+  - **Multi-Lobe Structural Subdomains**: Curated `domain` hits split by TED into internal structural lobes ($\text{Cov}_{\text{TED}} \ge 0.80, 0.20 \le \text{Cov}_{\text{Annot}} < 0.50$, e.g., `Protein kinase N-terminal subdomain`, `Cytochrome P450 central subdomain`), resolving **5,934 domains** across 100k.
+- **Tier 2 (`superfamily`, $W = 0.85$, `24.54%`)**:
   - Homologous superfamilies (`CATH H-level`, `CATH-Gene3D`, `SUPERFAMILY`, `InterPro homologous_superfamily`).
   - Always prioritizes curated integrated InterPro names; for top unintegrated legacy `G3DSA` superfamilies (e.g., `3.30.200.20` and `1.10.510.10`), applies [`CURATED_UNINTEGRATED_CATH_H_NAMES`](../ted_namer/cath_classifier.py) (*Protein kinase-like N-terminal / C-terminal catalytic lobe superfamily*); and uses **actual `G3DSA` overlap metrics** instead of inflated hardcoded `cath_h` boosts.
-- **Tier 3 (`protein_family_context`, $W = 0.65$, `12.99%`)**:
+- **Tier 3 (`protein_family_context`, $W = 0.65$, `12.86%`)**:
   - Whole-protein families (`HAMAP`, `NCBIfam family`, `PANTHER`, `InterPro family`, `PIRSF`), short signatures (`conserved_site`, `active_site`, `binding_site`), and parent UniProt `SIMILARITY`/protein context combined with domain relative position and scaled by true domain-to-protein length ratio ($\text{IoU}_{\text{context}} = 0.30 + 0.60\,L_{\text{domain}}/L_{\text{protein}}$).
 - **Tier 4 (`topology_fold`, $W = 0.45$, `0.07%`) & Tier 5 (`novel_uncharacterized`, $W = 0.25$, `0.11%`)**:
   - Confirmed-`T` CATH v4.4 Topology name (`?`-free) when sequence/protein context is completely uncharacterized (`Unknown domain`, `DUF\d+`, `Uncharacterized protein`).
@@ -118,9 +118,9 @@ To eliminate any ambiguity with CATH's own `T`-level (*Topology*):
 
 1. **Cross-Database Synonym Unification**: Groups hits under `IPR:{integrated_ipr}:{tier}` or `CATH_H:{code}:{tier}` with weighted name voting (`interpro = 3`, sequence domain DBs `= 2`, superfamily DBs `= 1`).
 2. **Naming Hygiene & Quality Penalties $P_{\text{quality}}(c)$**:
-   - **Tag Stripping & Deduplication**: Removes `[gene]` / `[EC]` brackets and deduplicates `domain-like domain` / `domain domain`.
-   - **Bare Positional Enrichment**: Automatically enriches bare labels (`N-terminal domain`, `NTD domain`) with parent protein/family context (e.g., `argonaute N-terminal domain`), eliminating bare positional winners completely (`149 -> 0`), or penalizes (`0.50x`) if no clean context exists.
-   - **Sentence Prose & Legacy PDB Penalties**: Sentence-like functional descriptions ($>90$ chars or verbs like *interacts with*, *is involved in*) fall back to concise `integrated_ipr_name`/`short_name` or take a `0.40x` penalty; residual legacy PDB headers take a `0.65x` penalty; low-information strings (`DUF`, `Uncharacterized`, `Unknown domain`) take `0.25x`.
+   - **Tag Stripping, Deduplication & Capitalization**: Removes `[gene]` / `[EC]` brackets, deduplicates `domain-like domain` / `domain domain`, and capitalizes plain lowercase-starting strings while preserving biochemical prefixes (`p53`, `tRNA`, `uS5`, `von Willebrand`, `beta-`).
+   - **Bare Positional Enrichment**: Automatically enriches bare labels (`N-terminal domain`, `NTD domain`) with parent protein/family context (e.g., `Argonaute N-terminal domain`), eliminating bare positional winners completely (`149 -> 0`), or penalizes (`0.50x`) if no clean context exists.
+   - **Sentence Prose & Legacy PDB Penalties**: Sentence-like functional descriptions ($>90$ chars or verbs like *interacts with*, *is involved in*) fall back to concise `integrated_ipr_name`/`short_name` or take a `0.40x` penalty; legacy PDB-header penalties (`0.65x`) are strictly scoped to unintegrated Tier 2 superfamilies or explicit PDB artifacts (`; domain \d+`, `. Chain`, `Transferase(`, `Phosphorylase Kinase`, `Vaccinia Virus`) so curated Tier 1 Pfam/InterPro domains (such as `RNA polymerase Rpb1 domain 1`) retain full unpenalized confidence; low-information strings (`DUF`, `Uncharacterized`, `Unknown domain`) take `0.25x`.
 3. **Calibrated Naming Confidence Score**:
    $$S(c) = \min\!\Big(1.0,\; W_{\text{tier}}(c) \times \Omega(c) \times P_{\text{quality}}(c) \times B_{\text{multi\_db}}(c) \times B_{\text{reviewed}}(c)\Big)$$
    where $\Omega_{N=1}(c) = 0.65\,\overline{\text{IoU}} + 0.35\,\overline{\text{Cov}}_{\text{TED}}$ and $\Omega_{N>1}(c) = 0.35\,f_{\text{cluster}} + 0.45\,\overline{\text{IoU}} + 0.20\,\overline{\text{Cov}}_{\text{TED}}$.
@@ -130,14 +130,14 @@ To eliminate any ambiguity with CATH's own `T`-level (*Topology*):
 
 ## 8. Concrete Case Studies Across Resolution Paths
 
-Representative examples from the refreshed 100,000-domain benchmark (`examples/random_100000_results.tsv`):
+Representative examples from the refreshed 100,000-domain benchmark (`examples/random_100000_results.tsv.gz`):
 
 | Domain ID | Protein | Assigned Name (Tier & Conf) | CATH Code (`hint`, `novel`) | Quality | Resolution Mechanism |
 | :--- | :--- | :--- | :--- | :---: | :--- |
 | `AF-Q8IWB3-F1-model_v4_TED01` | Ser/Thr kinase | **Protein kinase domain** *(Tier 1, 0.722)* | `1.10.510.10` *(official)* | `ok` | Legacy `Transferase(Phosphotransferase) domain 1` replaced; clean Tier 1 Pfam wins |
 | `AF-Q6DBX4-F1-model_v4_TED01` | AGC kinase | **Protein kinase-like domain superfamily** *(Tier 2, 0.729)* | `1.10.510.10` *(official)* | `ok` | Uninflated `cath_h` + curated `IPR011009` beats legacy PDB header |
 | `AF-A4F4K3-F1-model_v4_TED02` | CYP1A1 | **Cytochrome P450 central subdomain** *(Tier 1, 0.772)* | `1.10.630.?` *(`1.10.630.10`, `false`)* | `ok` | Multi-lobe subdomain resolution + `g3dsa_overlap` (`known_depth=3`) |
-| `AF-Q8U3D2-F1-model_v4_TED01` | Argonaute | **argonaute N-terminal domain** *(Tier 1, 0.820)* | `3.90.70.?` *(`3.90.70.180`, `false`)* | `ok` | Bare `"N-terminal domain"` enriched with parent family + `Profile-to-CATH` |
+| `AF-Q8U3D2-F1-model_v4_TED01` | Argonaute | **Argonaute N-terminal domain** *(Tier 1, 0.820)* | `3.90.70.?` *(`3.90.70.180`, `false`)* | `ok` | Bare `"N-terminal domain"` enriched & capitalized + `Profile-to-CATH` |
 | `AF-A0A1G9Z131-F1-model_v4_TED02` | BioU | **BioU C-terminal domain** *(Tier 3, 0.451)* | `3.?.?.?` *(`3.40.50.720`, `false`)* | `ok` | `HAMAP` whole-protein `[bioU]` `family` properly routed to Tier 3 + stripped |
 | `AF-O05442-F1-model_v4_TED01` | CpnT | **Outer membrane channel protein CpnT N-terminal domain** *(Tier 3, 0.511)* | `1.?.?.?` *(`1.25.40.10`, `true`)* | `ok` | Bare `NTD domain` enriched; unassigned CATH flagged `novel_fold_candidate` |
 
@@ -147,6 +147,6 @@ Representative examples from the refreshed 100,000-domain benchmark (`examples/r
 
 Validated across **100,000 unique TED domains** (10 deciles of 10,000 domains) and blind 5-fold cross-validation ($N = 72,130$ official CATH domains) in [`docs/ACCURACY_VALIDATION.md`](ACCURACY_VALIDATION.md):
 
-- **Specific Domain or Curated Superfamily Resolution (Tier 1 + Tier 2)**: **86.83%** (decile range **85.66%–88.10%**; **99.82%** including Tier 3 family-context).
+- **Specific Domain or Curated Superfamily Resolution (Tier 1 + Tier 2)**: **86.96%** (decile range **85.78%–88.27%**; **99.82%** including Tier 3 family-context).
 - **CATH Direct Confirmed-Digit Precision ($N = 72,130$)**: **98.16%** ($C$), **98.57%** ($C.A$), **98.07%** ($C.A.T$), and **99.78%** ($C.A.T.H$).
-- **Leave-One-Database-Out Concordance ($N = 36,511$)**: **91.06%** exact InterPro/normalized concordance and **96.39%** semantic concordance.
+- **Leave-One-Database-Out Concordance ($N = 36,843$)**: **91.23%** exact InterPro/normalized concordance and **96.45%** semantic concordance.

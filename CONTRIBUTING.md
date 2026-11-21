@@ -7,7 +7,7 @@ Thank you for your interest in contributing to **`ted-namer`**! We welcome bug r
 ## Reporting Bugs and Requesting Features
 
 Please use the [GitHub Issues tracker](https://github.com/KarelBerka/TED-namer/issues) to report bugs or propose enhancements:
-- **Bug Reports**: Include the `ted-namer` version (`0.1.0`), Python version, the exact TED domain ID(s) or CLI command used, and the expected vs. observed output.
+- **Bug Reports**: Include the `ted-namer` version (`0.2.0`), Python version, the exact TED domain ID(s) or CLI command used, and the expected vs. observed output.
 - **Naming or CATH Classification Edge Cases**: If you encounter a TED domain where the assigned name, specificity tier, or CATH code could be improved, please include the TED ID (e.g., `AF-P04637-F1-model_v4_TED01`) so we can add it to our regression test suite.
 
 ---

@@ -8,6 +8,7 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -218,19 +219,25 @@ def inspect_command(
             if m.protein_context and m.protein_context.recommended_name
             else m.domain.uniprot_acc
         )
-        cath_desc = m.domain.cath_label
+        eff_cath = m.domain.inferred_cath_label or m.domain.cath_label
+        cath_desc = eff_cath
+        if m.domain.cath_fold_hint:
+            cath_desc += f" (fold hint: {m.domain.cath_fold_hint})"
         if m.cath_info:
             parts = [p for p in (m.cath_info.superfamily_name, m.cath_info.topology_name) if p]
             if parts:
-                cath_desc = f"{m.domain.cath_label} ({' / '.join(parts)})"
+                cath_desc += f" ({' / '.join(parts)})"
 
+        qual_str = ", ".join(single_res.structure_quality_flags) if single_res.structure_quality_flags else "ok"
+        novel_str = "yes" if single_res.novel_fold_candidate else "no"
         header_text = (
             f"[bold green]Proposed Name:[/bold green] [bold white]{single_res.consensus_name}[/bold white] "
             f"([yellow]{single_res.short_name}[/yellow], conf={single_res.confidence_score:.2f}, tier={single_res.specificity_tier.value})\n"
             f"[bold cyan]Parent Protein:[/bold cyan] {prot_title}\n"
             f"[bold cyan]Chopping:[/bold cyan] {m.domain.chopping} ({m.domain.nres_domain} res, {m.relative_position}, pLDDT={m.domain.plddt:.1f})\n"
             f"[bold cyan]CATH Classification:[/bold cyan] {cath_desc}\n"
-            f"[dim]{single_res.rationale}[/dim]"
+            f"[bold cyan]Novel Fold Candidate:[/bold cyan] {novel_str} | [bold cyan]Structure Quality:[/bold cyan] {qual_str}\n"
+            f"[dim]{rich_escape(single_res.rationale)}[/dim]"
         )
 
         annot_table = Table(show_header=True, header_style="bold magenta", expand=True)

@@ -501,3 +501,100 @@ def test_naming_hygiene_sentences_bare_positions_and_quality_flags() -> None:
     assert res.dominant_cath_label == "3.?.?.?"
     assert res.cath_fold_hint is not None
 
+
+def test_tier1_no_false_pdb_penalty_and_capitalization_rules() -> None:
+    """Curated Tier 1 Pfam/InterPro domains with numbers/subunit keep full score; lowercase names capitalize safely."""
+    from ted_namer.aggregator import clean_display_domain_name
+
+    # 1. Legitimate Tier 1 domains with 'domain 1' or 'subunit 5' must NOT take 0.65x legacy PDB penalty
+    m_rpb = EnrichedTedDomain(
+        domain=TedDomainMember(
+            ted_id="AF-P37871-F1-model_v4_TED01",
+            uniprot_acc="P37871",
+            chopping="10-200",
+            nres_domain=191,
+            cath_label="3.30.70.10",
+        ),
+        protein_context=ProteinContext(
+            uniprot_acc="P37871",
+            recommended_name="DNA-directed RNA polymerase subunit beta'",
+            is_reviewed=True,
+            protein_length=1200,
+        ),
+        overlapping_annotations=[
+            OverlappingAnnotation(
+                source_db="pfam",
+                accession="PF04997",
+                name="RNA polymerase Rpb1, domain 1",
+                integrated_ipr="IPR007083",
+                integrated_ipr_name="RNA polymerase Rpb1, domain 1",
+                annotation_type="domain",
+                chopping="10-200",
+                iou=0.95,
+                ted_coverage=0.98,
+                annot_coverage=0.96,
+                overlap_category=OverlapCategory.EXACT_MATCH,
+            ),
+            OverlappingAnnotation(
+                source_db="interpro",
+                accession="IPR007083",
+                name="RNA polymerase Rpb1, domain 1",
+                annotation_type="domain",
+                chopping="10-200",
+                iou=0.95,
+                ted_coverage=0.98,
+                annot_coverage=0.96,
+                overlap_category=OverlapCategory.EXACT_MATCH,
+            ),
+        ],
+        relative_position="N-terminal",
+    )
+    res_rpb = aggregate_cluster_evidence("rpb1_dom1", [m_rpb])
+    assert res_rpb.specificity_tier == SpecificityTier.SPECIFIC_DOMAIN
+    assert res_rpb.consensus_name == "RNA polymerase Rpb1 domain 1"
+    assert res_rpb.confidence_score >= 0.90
+
+    m_orc = EnrichedTedDomain(
+        domain=TedDomainMember(
+            ted_id="AF-O43114-F1-model_v4_TED03",
+            uniprot_acc="O43114",
+            chopping="300-440",
+            nres_domain=141,
+            cath_label="1.10.10.10",
+        ),
+        protein_context=ProteinContext(
+            uniprot_acc="O43114",
+            recommended_name="Origin recognition complex subunit 5",
+            is_reviewed=True,
+            protein_length=450,
+        ),
+        overlapping_annotations=[
+            OverlappingAnnotation(
+                source_db="pfam",
+                accession="PF09079",
+                name="Origin recognition complex subunit 5 C-terminal domain",
+                integrated_ipr="IPR015164",
+                annotation_type="domain",
+                chopping="300-440",
+                iou=0.94,
+                ted_coverage=0.98,
+                annot_coverage=0.96,
+                overlap_category=OverlapCategory.EXACT_MATCH,
+            )
+        ],
+        relative_position="C-terminal",
+    )
+    res_orc = aggregate_cluster_evidence("orc5_dom", [m_orc])
+    assert res_orc.specificity_tier == SpecificityTier.SPECIFIC_DOMAIN
+    assert res_orc.confidence_score >= 0.90
+
+    # 2. Capitalize plain lowercase names while preserving biochemical prefixes
+    assert clean_display_domain_name("protein kinase N-terminal domain", SpecificityTier.PROTEIN_FAMILY_CONTEXT) == "Protein kinase N-terminal domain"
+    assert clean_display_domain_name("argonaute N-terminal domain", SpecificityTier.SPECIFIC_DOMAIN) == "Argonaute N-terminal domain"
+    assert clean_display_domain_name("p53 DNA-binding domain", SpecificityTier.SPECIFIC_DOMAIN) == "p53 DNA-binding domain"
+    assert clean_display_domain_name("tRNA synthetase domain", SpecificityTier.SPECIFIC_DOMAIN) == "tRNA synthetase domain"
+    assert clean_display_domain_name("von Willebrand factor type A domain", SpecificityTier.SPECIFIC_DOMAIN) == "von Willebrand factor type A domain"
+    assert clean_display_domain_name("beta-lactamase domain", SpecificityTier.SPECIFIC_DOMAIN) == "beta-lactamase domain"
+    assert clean_display_domain_name("uS5 domain", SpecificityTier.SPECIFIC_DOMAIN) == "uS5 domain"
+
+

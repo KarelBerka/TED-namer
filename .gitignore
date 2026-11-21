@@ -34,14 +34,14 @@ htmlcov/
 *.sqlite-journal
 *.log
 
-# Large Benchmark JSON Data dumps (>50MB) and multi-megabyte reports
+# Large Benchmark Data dumps and intermediate reports
 examples/*.json
 examples/*.jsonl
-!examples/*_summary.json
+!examples/benchmark_100000_summary.json
 examples/*_additional_*
-examples/random_4000_report.md
-examples/random_5000_report.md
-examples/random_10000_report.md
+examples/random_*_results.tsv
+examples/random_*_batches_*.tsv
+examples/random_*_report.md
 
 # IDE & OS
 .idea/

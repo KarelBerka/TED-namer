@@ -17,7 +17,7 @@ Given a JSON evidence summary for a cluster of homologous TED structural domains
 
 Guidelines:
 1. Prefer specific functional/structural domain names (e.g., "p53 DNA-binding domain", "P-loop NTPase domain") when high-IoU sequence/structure domain hits exist.
-2. Avoid redundant or noisy suffixes (use "domain", "repeat", or "fold" appropriately; do not output ALL-CAPS database strings).
+2. Avoid redundant or noisy suffixes (use "domain", "repeat", or "fold" appropriately; do not output ALL-CAPS database strings). Note that '?' wildcards in dominant_cath_label indicate unconfirmed hierarchy levels and novel_fold_candidate=true marks hypothetical novel folds.
 3. If the cluster has no specific domain match but has a CATH superfamily or topology, or is an unannotated region of a known protein family, combine the protein/superfamily context with the domain's relative position or fold (e.g., "BRCA1 C-terminal BRCT domain" or "Immunoglobulin-like beta-sandwich domain").
 4. Output strictly valid JSON with keys:
    - "consensus_name": string (concise canonical name, 2-6 words)
@@ -33,6 +33,9 @@ def build_evidence_dossier(result: ClusterNamingResult) -> dict[str, Any]:
         "cluster_id": result.cluster_id,
         "member_count": result.member_count,
         "dominant_cath_label": result.dominant_cath_label,
+        "cath_fold_hint": result.cath_fold_hint,
+        "novel_fold_candidate": result.novel_fold_candidate,
+        "structure_quality_flags": result.structure_quality_flags,
         "cath_summary": result.cath_summary.model_dump() if result.cath_summary else None,
         "consensus_relative_position": result.consensus_relative_position,
         "taxonomic_summary": result.taxonomic_summary,

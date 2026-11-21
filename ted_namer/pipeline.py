@@ -127,7 +127,7 @@ class TedNamingPipeline:
     ) -> list[ClusterNamingResult]:
         """Resolve TED identifiers in cluster_map, enrich members, and compute cluster names."""
         semaphore = asyncio.Semaphore(self.concurrency)
-        headers = {"User-Agent": "ted-namer/0.1.0 (https://ted.cathdb.info)"}
+        headers = {"User-Agent": "ted-namer/0.2.0 (https://ted.cathdb.info)"}
 
         limits = httpx.Limits(max_connections=max(100, self.concurrency * 3), max_keepalive_connections=50)
         async with httpx.AsyncClient(headers=headers, follow_redirects=True, limits=limits) as http:

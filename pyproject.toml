@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ted-namer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Cluster- and family-level structural domain naming pipeline for TED (The Encyclopedia of Domains, ted.cathdb.info)"
 readme = "README.md"
 authors = [

@@ -5,6 +5,7 @@ and structural quality flags — computing Before vs. After validity statistics 
 from __future__ import annotations
 
 import csv
+import gzip
 import io
 import json
 import re
@@ -15,6 +16,7 @@ from typing import Any
 
 from ted_namer.aggregator import (
     _LEGACY_PDB_HEADER_RE,
+    _STRICT_PDB_ARTIFACT_RE,
     aggregate_cluster_evidence,
     is_bare_positional_name,
     is_low_information_name,
@@ -59,11 +61,17 @@ def audit_names(rows: list[dict[str, Any]], label_key: str = "consensus_name", c
     t_prefix = 0
     wildcard_q = 0
     unknown_domain = 0
+    lowercase_start = 0
+    strict_pdb_artifacts = 0
     residual_legacy = Counter()
 
     for r in rows:
         nm = r.get(label_key) or ""
         cath = r.get(cath_key) or ""
+        if nm and nm[0].islower():
+            lowercase_start += 1
+        if _STRICT_PDB_ARTIFACT_RE.search(nm):
+            strict_pdb_artifacts += 1
         if _LEGACY_PDB_HEADER_RE.search(nm):
             legacy_pdb += 1
             residual_legacy[nm] += 1
@@ -91,8 +99,10 @@ def audit_names(rows: list[dict[str, Any]], label_key: str = "consensus_name", c
     return {
         "total": n,
         "legacy_pdb_headers": legacy_pdb,
+        "strict_pdb_artifacts": strict_pdb_artifacts,
         "sentence_like_descriptions": sentence_like,
         "bare_positional_names": bare_pos,
+        "lowercase_start_names": lowercase_start,
         "bracketed_gene_or_ec_tags": brackets,
         "low_info_or_unknown": low_info,
         "unknown_keyword": unknown_domain,
@@ -203,7 +213,7 @@ def main() -> None:
     examples_dir = Path("examples")
     jsonl_path = examples_dir / "random_100000_compact.jsonl"
     tmp_jsonl = examples_dir / "random_100000_compact.tmp.jsonl"
-    tsv_path = examples_dir / "random_100000_results.tsv"
+    tsv_gz_path = examples_dir / "random_100000_results.tsv.gz"
 
     cache = ApiCache()
     before_audit_rows: list[dict[str, Any]] = []
@@ -217,7 +227,7 @@ def main() -> None:
     with (
         open(jsonl_path, encoding="utf-8") as fin,
         open(tmp_jsonl, "w", encoding="utf-8") as jout,
-        open(tsv_path, "w", encoding="utf-8", newline="\n") as tout,
+        gzip.open(tsv_gz_path, "wt", encoding="utf-8", newline="\n") as tout,
     ):
         batch_results: list[ClusterNamingResult] = []
         for idx, line in enumerate(fin, start=1):
@@ -271,7 +281,8 @@ def main() -> None:
                 tout.writelines(lines[1:])
 
     tmp_jsonl.replace(jsonl_path)
-    print(f"Finished refreshing TSV & compact JSONL in {time.perf_counter() - t0:.1f}s.", flush=True)
+    gz_mb = tsv_gz_path.stat().st_size / (1024 * 1024)
+    print(f"Finished refreshing {tsv_gz_path} ({gz_mb:.2f} MB) & compact JSONL in {time.perf_counter() - t0:.1f}s.", flush=True)
 
     before_audit = audit_names(before_audit_rows)
     after_audit = audit_names(after_compact_rows)

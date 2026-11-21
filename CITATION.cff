@@ -10,8 +10,8 @@ authors:
 repository-code: "https://github.com/KarelBerka/TED-namer"
 url: "https://github.com/KarelBerka/TED-namer"
 license: MIT
-version: "0.1.0"
-date-released: "2026-10-27"
+version: "0.2.0"
+date-released: "2026-11-21"
 keywords:
   - bioinformatics
   - structural-biology

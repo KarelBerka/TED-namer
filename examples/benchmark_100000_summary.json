@@ -1,261 +1,262 @@
 {
   "overall_100k_stats": {
     "count": 100000,
-    "mean_confidence": 0.7931,
+    "mean_confidence": 0.798,
     "mean_conf_by_tier": {
-      "superfamily": 0.7653,
-      "specific_domain": 0.8839,
-      "protein_family_context": 0.4199,
+      "superfamily": 0.7689,
+      "specific_domain": 0.8887,
+      "protein_family_context": 0.4218,
       "novel_uncharacterized": 0.1509,
-      "topology_fold": 0.2034
+      "topology_fold": 0.2085
     },
-    "tier_specific_domain": 0.6214,
-    "tier_superfamily": 0.24692,
-    "tier_specific_or_superfamily": 0.86832,
-    "tier_family_context": 0.12989,
-    "tier_topology_fold": 0.00069,
+    "tier_specific_domain": 0.62425,
+    "tier_superfamily": 0.24537,
+    "tier_specific_or_superfamily": 0.86962,
+    "tier_family_context": 0.12858,
+    "tier_topology_fold": 0.0007,
     "cath_official": 0.7213,
     "cath_t_level": 0.09692,
     "cath_profile_map": 0.0432,
     "cath_g3dsa": 0.03118,
     "cath_direct_3d_rules": 0.1074,
-    "conf_below_50_pct": 0.14969,
+    "conf_below_50_pct": 0.14591,
     "low_plddt_pct": 0.00686,
-    "sublobe_count": 5901
+    "sublobe_count": 5934
   },
   "deciles_10k": {
     "Decile_1_1_to_10000": {
       "count": 10000,
-      "mean_confidence": 0.8003,
+      "mean_confidence": 0.8039,
       "mean_conf_by_tier": {
-        "superfamily": 0.778,
-        "specific_domain": 0.8918,
-        "protein_family_context": 0.4374,
+        "superfamily": 0.7816,
+        "specific_domain": 0.8952,
+        "protein_family_context": 0.4391,
         "novel_uncharacterized": 0.15
       },
-      "tier_specific_domain": 0.6255,
-      "tier_superfamily": 0.2311,
-      "tier_specific_or_superfamily": 0.8566,
-      "tier_family_context": 0.1432,
+      "tier_specific_domain": 0.6254,
+      "tier_superfamily": 0.2324,
+      "tier_specific_or_superfamily": 0.8578,
+      "tier_family_context": 0.142,
       "tier_topology_fold": 0.0,
       "cath_official": 0.6979,
       "cath_t_level": 0.1155,
       "cath_profile_map": 0.0554,
       "cath_g3dsa": 0.0318,
       "cath_direct_3d_rules": 0.0994,
-      "conf_below_50_pct": 0.1439,
+      "conf_below_50_pct": 0.1418,
       "low_plddt_pct": 0.0092,
-      "sublobe_count": 423
+      "sublobe_count": 415
     },
     "Decile_2_10001_to_20000": {
       "count": 10000,
-      "mean_confidence": 0.8133,
+      "mean_confidence": 0.8178,
       "mean_conf_by_tier": {
-        "specific_domain": 0.9007,
-        "protein_family_context": 0.4457,
-        "superfamily": 0.7806,
+        "specific_domain": 0.9044,
+        "protein_family_context": 0.4481,
+        "superfamily": 0.7849,
         "novel_uncharacterized": 0.1513,
-        "topology_fold": 0.1919
+        "topology_fold": 0.1983
       },
-      "tier_specific_domain": 0.6315,
-      "tier_superfamily": 0.2495,
-      "tier_specific_or_superfamily": 0.881,
-      "tier_family_context": 0.1075,
+      "tier_specific_domain": 0.6329,
+      "tier_superfamily": 0.2498,
+      "tier_specific_or_superfamily": 0.8827,
+      "tier_family_context": 0.1058,
       "tier_topology_fold": 0.0039,
       "cath_official": 0.732,
       "cath_t_level": 0.1012,
       "cath_profile_map": 0.0317,
       "cath_g3dsa": 0.0348,
       "cath_direct_3d_rules": 0.1003,
-      "conf_below_50_pct": 0.1152,
+      "conf_below_50_pct": 0.1114,
       "low_plddt_pct": 0.0111,
-      "sublobe_count": 478
+      "sublobe_count": 471
     },
     "Decile_3_20001_to_30000": {
       "count": 10000,
-      "mean_confidence": 0.7942,
+      "mean_confidence": 0.7995,
       "mean_conf_by_tier": {
-        "specific_domain": 0.8901,
-        "protein_family_context": 0.4104,
-        "superfamily": 0.754,
+        "specific_domain": 0.8946,
+        "protein_family_context": 0.4133,
+        "superfamily": 0.7591,
         "novel_uncharacterized": 0.15,
-        "topology_fold": 0.2129
+        "topology_fold": 0.2173
       },
-      "tier_specific_domain": 0.6311,
-      "tier_superfamily": 0.239,
-      "tier_specific_or_superfamily": 0.8701,
-      "tier_family_context": 0.1252,
+      "tier_specific_domain": 0.6331,
+      "tier_superfamily": 0.2387,
+      "tier_specific_or_superfamily": 0.8718,
+      "tier_family_context": 0.1235,
       "tier_topology_fold": 0.0019,
       "cath_official": 0.7052,
       "cath_t_level": 0.1129,
       "cath_profile_map": 0.0489,
       "cath_g3dsa": 0.0374,
       "cath_direct_3d_rules": 0.0956,
-      "conf_below_50_pct": 0.1505,
+      "conf_below_50_pct": 0.147,
       "low_plddt_pct": 0.0116,
-      "sublobe_count": 640
+      "sublobe_count": 629
     },
     "Decile_4_30001_to_40000": {
       "count": 10000,
-      "mean_confidence": 0.7919,
+      "mean_confidence": 0.7963,
       "mean_conf_by_tier": {
-        "specific_domain": 0.8815,
-        "protein_family_context": 0.4152,
-        "superfamily": 0.7607,
+        "specific_domain": 0.8859,
+        "protein_family_context": 0.4176,
+        "superfamily": 0.7632,
         "topology_fold": 0.235
       },
-      "tier_specific_domain": 0.6264,
-      "tier_superfamily": 0.245,
-      "tier_specific_or_superfamily": 0.8714,
-      "tier_family_context": 0.1283,
+      "tier_specific_domain": 0.6292,
+      "tier_superfamily": 0.2435,
+      "tier_specific_or_superfamily": 0.8727,
+      "tier_family_context": 0.127,
       "tier_topology_fold": 0.0003,
       "cath_official": 0.7282,
       "cath_t_level": 0.0897,
       "cath_profile_map": 0.0423,
       "cath_g3dsa": 0.0283,
       "cath_direct_3d_rules": 0.1115,
-      "conf_below_50_pct": 0.151,
+      "conf_below_50_pct": 0.1471,
       "low_plddt_pct": 0.0056,
-      "sublobe_count": 639
+      "sublobe_count": 643
     },
     "Decile_5_40001_to_50000": {
       "count": 10000,
-      "mean_confidence": 0.7903,
+      "mean_confidence": 0.7957,
       "mean_conf_by_tier": {
-        "specific_domain": 0.8806,
-        "superfamily": 0.7611,
-        "protein_family_context": 0.4164,
+        "specific_domain": 0.8861,
+        "superfamily": 0.765,
+        "protein_family_context": 0.418,
         "novel_uncharacterized": 0.15,
         "topology_fold": 0.235
       },
-      "tier_specific_domain": 0.62,
-      "tier_superfamily": 0.2498,
-      "tier_specific_or_superfamily": 0.8698,
-      "tier_family_context": 0.13,
+      "tier_specific_domain": 0.6251,
+      "tier_superfamily": 0.2455,
+      "tier_specific_or_superfamily": 0.8706,
+      "tier_family_context": 0.1292,
       "tier_topology_fold": 0.0001,
       "cath_official": 0.7205,
       "cath_t_level": 0.0968,
       "cath_profile_map": 0.0402,
       "cath_g3dsa": 0.0281,
       "cath_direct_3d_rules": 0.1144,
-      "conf_below_50_pct": 0.1518,
+      "conf_below_50_pct": 0.1485,
       "low_plddt_pct": 0.0048,
-      "sublobe_count": 603
+      "sublobe_count": 610
     },
     "Decile_6_50001_to_60000": {
       "count": 10000,
-      "mean_confidence": 0.7874,
+      "mean_confidence": 0.793,
       "mean_conf_by_tier": {
-        "specific_domain": 0.8759,
-        "superfamily": 0.762,
-        "protein_family_context": 0.4147,
+        "specific_domain": 0.8825,
+        "superfamily": 0.7647,
+        "protein_family_context": 0.4159,
         "topology_fold": 0.235,
         "novel_uncharacterized": 0.15
       },
-      "tier_specific_domain": 0.62,
-      "tier_superfamily": 0.2499,
-      "tier_specific_or_superfamily": 0.8699,
-      "tier_family_context": 0.1297,
+      "tier_specific_domain": 0.6222,
+      "tier_superfamily": 0.2491,
+      "tier_specific_or_superfamily": 0.8713,
+      "tier_family_context": 0.1283,
       "tier_topology_fold": 0.0003,
       "cath_official": 0.7209,
       "cath_t_level": 0.0891,
       "cath_profile_map": 0.0454,
       "cath_g3dsa": 0.0303,
       "cath_direct_3d_rules": 0.1143,
-      "conf_below_50_pct": 0.156,
+      "conf_below_50_pct": 0.1509,
       "low_plddt_pct": 0.0041,
-      "sublobe_count": 667
+      "sublobe_count": 670
     },
     "Decile_7_60001_to_70000": {
       "count": 10000,
-      "mean_confidence": 0.7873,
+      "mean_confidence": 0.7926,
       "mean_conf_by_tier": {
-        "specific_domain": 0.8794,
-        "superfamily": 0.7609,
-        "protein_family_context": 0.4143,
+        "specific_domain": 0.8849,
+        "superfamily": 0.7646,
+        "protein_family_context": 0.4162,
         "topology_fold": 0.235
       },
-      "tier_specific_domain": 0.6145,
-      "tier_superfamily": 0.2516,
-      "tier_specific_or_superfamily": 0.8661,
-      "tier_family_context": 0.1338,
+      "tier_specific_domain": 0.6178,
+      "tier_superfamily": 0.2493,
+      "tier_specific_or_superfamily": 0.8671,
+      "tier_family_context": 0.1328,
       "tier_topology_fold": 0.0001,
       "cath_official": 0.7319,
       "cath_t_level": 0.0887,
       "cath_profile_map": 0.0438,
       "cath_g3dsa": 0.0302,
       "cath_direct_3d_rules": 0.1054,
-      "conf_below_50_pct": 0.1639,
+      "conf_below_50_pct": 0.1597,
       "low_plddt_pct": 0.0065,
-      "sublobe_count": 601
+      "sublobe_count": 609
     },
     "Decile_8_70001_to_80000": {
       "count": 10000,
-      "mean_confidence": 0.7881,
+      "mean_confidence": 0.7931,
       "mean_conf_by_tier": {
-        "specific_domain": 0.8794,
-        "protein_family_context": 0.4143,
-        "superfamily": 0.7657,
+        "specific_domain": 0.8842,
+        "protein_family_context": 0.416,
+        "superfamily": 0.7689,
+        "topology_fold": 0.235,
         "novel_uncharacterized": 0.15
       },
-      "tier_specific_domain": 0.6109,
-      "tier_superfamily": 0.2554,
-      "tier_specific_or_superfamily": 0.8663,
-      "tier_family_context": 0.1335,
-      "tier_topology_fold": 0.0,
+      "tier_specific_domain": 0.6144,
+      "tier_superfamily": 0.2535,
+      "tier_specific_or_superfamily": 0.8679,
+      "tier_family_context": 0.1318,
+      "tier_topology_fold": 0.0001,
       "cath_official": 0.725,
       "cath_t_level": 0.0932,
       "cath_profile_map": 0.0442,
       "cath_g3dsa": 0.0277,
       "cath_direct_3d_rules": 0.1099,
-      "conf_below_50_pct": 0.1561,
+      "conf_below_50_pct": 0.1514,
       "low_plddt_pct": 0.005,
-      "sublobe_count": 651
+      "sublobe_count": 661
     },
     "Decile_9_80001_to_90000": {
       "count": 10000,
-      "mean_confidence": 0.7916,
+      "mean_confidence": 0.7969,
       "mean_conf_by_tier": {
-        "superfamily": 0.7695,
-        "specific_domain": 0.8797,
-        "protein_family_context": 0.4163,
+        "superfamily": 0.7736,
+        "specific_domain": 0.8852,
+        "protein_family_context": 0.4178,
         "topology_fold": 0.2077
       },
-      "tier_specific_domain": 0.6202,
-      "tier_superfamily": 0.249,
-      "tier_specific_or_superfamily": 0.8692,
-      "tier_family_context": 0.1305,
+      "tier_specific_domain": 0.6243,
+      "tier_superfamily": 0.2455,
+      "tier_specific_or_superfamily": 0.8698,
+      "tier_family_context": 0.1299,
       "tier_topology_fold": 0.0003,
       "cath_official": 0.7321,
       "cath_t_level": 0.0868,
       "cath_profile_map": 0.0413,
       "cath_g3dsa": 0.0307,
       "cath_direct_3d_rules": 0.1091,
-      "conf_below_50_pct": 0.1508,
+      "conf_below_50_pct": 0.1474,
       "low_plddt_pct": 0.0051,
-      "sublobe_count": 578
+      "sublobe_count": 592
     },
     "Decile_10_90001_to_100000": {
       "count": 10000,
-      "mean_confidence": 0.7863,
+      "mean_confidence": 0.7914,
       "mean_conf_by_tier": {
-        "superfamily": 0.7612,
-        "specific_domain": 0.879,
-        "protein_family_context": 0.4173
+        "superfamily": 0.7637,
+        "specific_domain": 0.8841,
+        "protein_family_context": 0.4191
       },
-      "tier_specific_domain": 0.6139,
-      "tier_superfamily": 0.2489,
-      "tier_specific_or_superfamily": 0.8628,
-      "tier_family_context": 0.1372,
+      "tier_specific_domain": 0.6181,
+      "tier_superfamily": 0.2464,
+      "tier_specific_or_superfamily": 0.8645,
+      "tier_family_context": 0.1355,
       "tier_topology_fold": 0.0,
       "cath_official": 0.7193,
       "cath_t_level": 0.0953,
       "cath_profile_map": 0.0388,
       "cath_g3dsa": 0.0325,
       "cath_direct_3d_rules": 0.1141,
-      "conf_below_50_pct": 0.1577,
+      "conf_below_50_pct": 0.1539,
       "low_plddt_pct": 0.0056,
-      "sublobe_count": 621
+      "sublobe_count": 634
     }
   },
   "cath_holdout_validation": {
@@ -297,74 +298,20 @@
     }
   },
   "naming_validation": {
-    "lodo_n": 36511,
-    "lodo_exact_concordance": 0.9106,
-    "lodo_semantic_concordance": 0.96387,
+    "lodo_n": 36843,
+    "lodo_exact_concordance": 0.91228,
+    "lodo_semantic_concordance": 0.96447,
     "legacy_pdb_noise_count": 36,
     "legacy_pdb_noise_pct": 0.00036
   },
   "validity_audit": {
     "before": {
       "total": 100000,
-      "legacy_pdb_headers": 6522,
-      "sentence_like_descriptions": 2454,
-      "bare_positional_names": 149,
-      "bracketed_gene_or_ec_tags": 703,
-      "low_info_or_unknown": 13,
-      "unknown_keyword": 20,
-      "adjacent_double_domain": 8,
-      "any_double_domain": 427,
-      "length_gt_90": 2230,
-      "legacy_t_prefix_cath": 26187,
-      "wildcard_q_cath": 0,
-      "top_residual_legacy_names": [
-        [
-          "Phosphorylase Kinase domain 1",
-          1152
-        ],
-        [
-          "Transferase(Phosphotransferase) domain 1",
-          994
-        ],
-        [
-          "Peroxidase domain 2",
-          182
-        ],
-        [
-          "RNA polymerase Rpb1 domain 3",
-          181
-        ],
-        [
-          "C-terminal regulatory PFK domain 2",
-          129
-        ],
-        [
-          "Aspartyl/Glutamyl-tRNA(Gln) amidotransferase subunit B/E catalytic domain",
-          113
-        ],
-        [
-          "N-terminal catalytic PFK domain 1",
-          101
-        ],
-        [
-          "RNA polymerase beta' chain C-terminal domain",
-          99
-        ],
-        [
-          "Aspartyl/glutamyl-tRNA amidotransferase subunit B-like",
-          85
-        ],
-        [
-          "Dimethylsulfoxide Reductase domain 2",
-          69
-        ]
-      ]
-    },
-    "after": {
-      "total": 100000,
       "legacy_pdb_headers": 1208,
+      "strict_pdb_artifacts": 36,
       "sentence_like_descriptions": 82,
       "bare_positional_names": 0,
+      "lowercase_start_names": 5054,
       "bracketed_gene_or_ec_tags": 0,
       "low_info_or_unknown": 108,
       "unknown_keyword": 8,
@@ -413,6 +360,64 @@
         [
           "Signal recognition particle SRP54 subunit M-domain",
           12
+        ]
+      ]
+    },
+    "after": {
+      "total": 100000,
+      "legacy_pdb_headers": 3208,
+      "strict_pdb_artifacts": 36,
+      "sentence_like_descriptions": 81,
+      "bare_positional_names": 0,
+      "lowercase_start_names": 744,
+      "bracketed_gene_or_ec_tags": 0,
+      "low_info_or_unknown": 108,
+      "unknown_keyword": 8,
+      "adjacent_double_domain": 0,
+      "any_double_domain": 223,
+      "length_gt_90": 64,
+      "legacy_t_prefix_cath": 0,
+      "wildcard_q_cath": 26187,
+      "top_residual_legacy_names": [
+        [
+          "RNA polymerase Rpb1 domain 3",
+          186
+        ],
+        [
+          "RNA polymerase beta' chain C-terminal domain",
+          145
+        ],
+        [
+          "Aspartyl/Glutamyl-tRNA(Gln) amidotransferase subunit B/E catalytic domain",
+          113
+        ],
+        [
+          "RNA polymerase Rpb1 domain 1",
+          109
+        ],
+        [
+          "Aspartyl/glutamyl-tRNA amidotransferase subunit B-like",
+          90
+        ],
+        [
+          "RNA polymerase Rpb1 domain 5 N-terminal subdomain",
+          55
+        ],
+        [
+          "Ribosomal protein uS5 domain 2-type superfamily",
+          47
+        ],
+        [
+          "DNA-directed RNA polymerase subunit 2 hybrid-binding central subdomain",
+          47
+        ],
+        [
+          "RNA polymerase Rpb1 domain 4",
+          39
+        ],
+        [
+          "RNA polymerase Rpb2 domain 7",
+          37
         ]
       ]
     },
